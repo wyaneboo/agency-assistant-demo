@@ -9,6 +9,9 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/app-sidebar";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -72,11 +75,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Agency Ops — Insurance Operations Tracker" },
+      { name: "description", content: "Central operations tracker for insurance agencies: cases, follow-ups, claims, recruitment, and tasks." },
+      { property: "og:title", content: "Agency Ops" },
+      { property: "og:description", content: "Insurance agency operations tracker." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
@@ -113,7 +115,23 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <SidebarProvider>
+        <div className="flex min-h-screen w-full bg-background">
+          <AppSidebar />
+          <div className="flex flex-1 flex-col">
+            <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
+              <SidebarTrigger />
+              <div className="text-sm text-muted-foreground">
+                Insurance Agency Operations
+              </div>
+            </header>
+            <main className="flex-1 px-6 py-6">
+              <Outlet />
+            </main>
+          </div>
+        </div>
+        <Toaster />
+      </SidebarProvider>
     </QueryClientProvider>
   );
 }
