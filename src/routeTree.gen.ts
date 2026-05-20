@@ -9,13 +9,49 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TasksRouteImport } from './routes/tasks'
+import { Route as RecruitmentRouteImport } from './routes/recruitment'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as ClaimsRouteImport } from './routes/claims'
 import { Route as CasesRouteImport } from './routes/cases'
+import { Route as AssistantRouteImport } from './routes/assistant'
+import { Route as AgentsRouteImport } from './routes/agents'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CasesCaseIdRouteImport } from './routes/cases.$caseId'
 
+const TasksRoute = TasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecruitmentRoute = RecruitmentRouteImport.update({
+  id: '/recruitment',
+  path: '/recruitment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClaimsRoute = ClaimsRouteImport.update({
+  id: '/claims',
+  path: '/claims',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CasesRoute = CasesRouteImport.update({
   id: '/cases',
   path: '/cases',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantRoute = AssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AgentsRoute = AgentsRouteImport.update({
+  id: '/agents',
+  path: '/agents',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,40 +67,134 @@ const CasesCaseIdRoute = CasesCaseIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/assistant': typeof AssistantRoute
   '/cases': typeof CasesRouteWithChildren
+  '/claims': typeof ClaimsRoute
+  '/notifications': typeof NotificationsRoute
+  '/recruitment': typeof RecruitmentRoute
+  '/tasks': typeof TasksRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/assistant': typeof AssistantRoute
   '/cases': typeof CasesRouteWithChildren
+  '/claims': typeof ClaimsRoute
+  '/notifications': typeof NotificationsRoute
+  '/recruitment': typeof RecruitmentRoute
+  '/tasks': typeof TasksRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/agents': typeof AgentsRoute
+  '/assistant': typeof AssistantRoute
   '/cases': typeof CasesRouteWithChildren
+  '/claims': typeof ClaimsRoute
+  '/notifications': typeof NotificationsRoute
+  '/recruitment': typeof RecruitmentRoute
+  '/tasks': typeof TasksRoute
   '/cases/$caseId': typeof CasesCaseIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/cases' | '/cases/$caseId'
+  fullPaths:
+    | '/'
+    | '/agents'
+    | '/assistant'
+    | '/cases'
+    | '/claims'
+    | '/notifications'
+    | '/recruitment'
+    | '/tasks'
+    | '/cases/$caseId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/cases' | '/cases/$caseId'
-  id: '__root__' | '/' | '/cases' | '/cases/$caseId'
+  to:
+    | '/'
+    | '/agents'
+    | '/assistant'
+    | '/cases'
+    | '/claims'
+    | '/notifications'
+    | '/recruitment'
+    | '/tasks'
+    | '/cases/$caseId'
+  id:
+    | '__root__'
+    | '/'
+    | '/agents'
+    | '/assistant'
+    | '/cases'
+    | '/claims'
+    | '/notifications'
+    | '/recruitment'
+    | '/tasks'
+    | '/cases/$caseId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AgentsRoute: typeof AgentsRoute
+  AssistantRoute: typeof AssistantRoute
   CasesRoute: typeof CasesRouteWithChildren
+  ClaimsRoute: typeof ClaimsRoute
+  NotificationsRoute: typeof NotificationsRoute
+  RecruitmentRoute: typeof RecruitmentRoute
+  TasksRoute: typeof TasksRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/tasks': {
+      id: '/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof TasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recruitment': {
+      id: '/recruitment'
+      path: '/recruitment'
+      fullPath: '/recruitment'
+      preLoaderRoute: typeof RecruitmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/claims': {
+      id: '/claims'
+      path: '/claims'
+      fullPath: '/claims'
+      preLoaderRoute: typeof ClaimsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cases': {
       id: '/cases'
       path: '/cases'
       fullPath: '/cases'
       preLoaderRoute: typeof CasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistant': {
+      id: '/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/agents': {
+      id: '/agents'
+      path: '/agents'
+      fullPath: '/agents'
+      preLoaderRoute: typeof AgentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -96,7 +226,13 @@ const CasesRouteWithChildren = CasesRoute._addFileChildren(CasesRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AgentsRoute: AgentsRoute,
+  AssistantRoute: AssistantRoute,
   CasesRoute: CasesRouteWithChildren,
+  ClaimsRoute: ClaimsRoute,
+  NotificationsRoute: NotificationsRoute,
+  RecruitmentRoute: RecruitmentRoute,
+  TasksRoute: TasksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
