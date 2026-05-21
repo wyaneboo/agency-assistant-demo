@@ -9,6 +9,8 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
 import { Route as AuthenticatedRecruitmentRouteImport } from './routes/_authenticated/recruitment'
@@ -19,47 +21,56 @@ import { Route as AuthenticatedAssistantRouteImport } from './routes/_authentica
 import { Route as AuthenticatedAgentsRouteImport } from './routes/_authenticated/agents'
 import { Route as AuthenticatedCasesCaseIdRouteImport } from './routes/_authenticated/cases.$caseId'
 
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
-  id: '/_authenticated/',
-  path: '/',
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
-  id: '/_authenticated/tasks',
-  path: '/tasks',
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedRecruitmentRoute =
   AuthenticatedRecruitmentRouteImport.update({
-    id: '/_authenticated/recruitment',
+    id: '/recruitment',
     path: '/recruitment',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedNotificationsRoute =
   AuthenticatedNotificationsRouteImport.update({
-    id: '/_authenticated/notifications',
+    id: '/notifications',
     path: '/notifications',
-    getParentRoute: () => rootRouteImport,
+    getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedClaimsRoute = AuthenticatedClaimsRouteImport.update({
-  id: '/_authenticated/claims',
+  id: '/claims',
   path: '/claims',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCasesRoute = AuthenticatedCasesRouteImport.update({
-  id: '/_authenticated/cases',
+  id: '/cases',
   path: '/cases',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAssistantRoute = AuthenticatedAssistantRouteImport.update({
-  id: '/_authenticated/assistant',
+  id: '/assistant',
   path: '/assistant',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedAgentsRoute = AuthenticatedAgentsRouteImport.update({
-  id: '/_authenticated/agents',
+  id: '/agents',
   path: '/agents',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedCasesCaseIdRoute =
   AuthenticatedCasesCaseIdRouteImport.update({
@@ -69,6 +80,8 @@ const AuthenticatedCasesCaseIdRoute =
   } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthenticatedIndexRoute
+  '/login': typeof LoginRoute
   '/agents': typeof AuthenticatedAgentsRoute
   '/assistant': typeof AuthenticatedAssistantRoute
   '/cases': typeof AuthenticatedCasesRouteWithChildren
@@ -76,10 +89,10 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/recruitment': typeof AuthenticatedRecruitmentRoute
   '/tasks': typeof AuthenticatedTasksRoute
-  '/': typeof AuthenticatedIndexRoute
   '/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
 }
 export interface FileRoutesByTo {
+  '/login': typeof LoginRoute
   '/agents': typeof AuthenticatedAgentsRoute
   '/assistant': typeof AuthenticatedAssistantRoute
   '/cases': typeof AuthenticatedCasesRouteWithChildren
@@ -92,6 +105,8 @@ export interface FileRoutesByTo {
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/login': typeof LoginRoute
   '/_authenticated/agents': typeof AuthenticatedAgentsRoute
   '/_authenticated/assistant': typeof AuthenticatedAssistantRoute
   '/_authenticated/cases': typeof AuthenticatedCasesRouteWithChildren
@@ -105,6 +120,8 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
+    | '/login'
     | '/agents'
     | '/assistant'
     | '/cases'
@@ -112,10 +129,10 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/recruitment'
     | '/tasks'
-    | '/'
     | '/cases/$caseId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/login'
     | '/agents'
     | '/assistant'
     | '/cases'
@@ -127,6 +144,8 @@ export interface FileRouteTypes {
     | '/cases/$caseId'
   id:
     | '__root__'
+    | '/_authenticated'
+    | '/login'
     | '/_authenticated/agents'
     | '/_authenticated/assistant'
     | '/_authenticated/cases'
@@ -139,73 +158,81 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AuthenticatedAgentsRoute: typeof AuthenticatedAgentsRoute
-  AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
-  AuthenticatedCasesRoute: typeof AuthenticatedCasesRouteWithChildren
-  AuthenticatedClaimsRoute: typeof AuthenticatedClaimsRoute
-  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
-  AuthenticatedRecruitmentRoute: typeof AuthenticatedRecruitmentRoute
-  AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  LoginRoute: typeof LoginRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/': {
       id: '/_authenticated/'
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/tasks': {
       id: '/_authenticated/tasks'
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof AuthenticatedTasksRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/recruitment': {
       id: '/_authenticated/recruitment'
       path: '/recruitment'
       fullPath: '/recruitment'
       preLoaderRoute: typeof AuthenticatedRecruitmentRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/notifications': {
       id: '/_authenticated/notifications'
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/claims': {
       id: '/_authenticated/claims'
       path: '/claims'
       fullPath: '/claims'
       preLoaderRoute: typeof AuthenticatedClaimsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/cases': {
       id: '/_authenticated/cases'
       path: '/cases'
       fullPath: '/cases'
       preLoaderRoute: typeof AuthenticatedCasesRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/assistant': {
       id: '/_authenticated/assistant'
       path: '/assistant'
       fullPath: '/assistant'
       preLoaderRoute: typeof AuthenticatedAssistantRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/agents': {
       id: '/_authenticated/agents'
       path: '/agents'
       fullPath: '/agents'
       preLoaderRoute: typeof AuthenticatedAgentsRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/cases/$caseId': {
       id: '/_authenticated/cases/$caseId'
@@ -228,7 +255,18 @@ const AuthenticatedCasesRouteChildren: AuthenticatedCasesRouteChildren = {
 const AuthenticatedCasesRouteWithChildren =
   AuthenticatedCasesRoute._addFileChildren(AuthenticatedCasesRouteChildren)
 
-const rootRouteChildren: RootRouteChildren = {
+interface AuthenticatedRouteChildren {
+  AuthenticatedAgentsRoute: typeof AuthenticatedAgentsRoute
+  AuthenticatedAssistantRoute: typeof AuthenticatedAssistantRoute
+  AuthenticatedCasesRoute: typeof AuthenticatedCasesRouteWithChildren
+  AuthenticatedClaimsRoute: typeof AuthenticatedClaimsRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedRecruitmentRoute: typeof AuthenticatedRecruitmentRoute
+  AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAgentsRoute: AuthenticatedAgentsRoute,
   AuthenticatedAssistantRoute: AuthenticatedAssistantRoute,
   AuthenticatedCasesRoute: AuthenticatedCasesRouteWithChildren,
@@ -237,6 +275,15 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRecruitmentRoute: AuthenticatedRecruitmentRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
+const rootRouteChildren: RootRouteChildren = {
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

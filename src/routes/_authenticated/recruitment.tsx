@@ -45,7 +45,7 @@ function RecruitmentPage() {
                     )}
                     {c.nextFollowUpDate && (
                       <p className="mt-1 text-xs text-warning-foreground">
-                        Follow-up {new Date(c.nextFollowUpDate).toLocaleDateString()}
+                        Follow-up {new Date(c.nextFollowUpDate).toLocaleDateString("en-US")}
                       </p>
                     )}
                   </div>
