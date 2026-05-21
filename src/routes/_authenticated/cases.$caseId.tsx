@@ -47,8 +47,8 @@ function CaseDetail() {
               <Field label="Priority"><StatusBadge value={c.priority} /></Field>
               <Field label="Premium">${c.premium.toLocaleString()}</Field>
               <Field label="ANP / FYP">${c.anpEstimate.toLocaleString()}</Field>
-              <Field label="Submitted">{new Date(c.submittedDate).toLocaleDateString()}</Field>
-              <Field label="Follow-up">{c.followUpDate ? new Date(c.followUpDate).toLocaleDateString() : "—"}</Field>
+              <Field label="Submitted">{new Date(c.submittedDate).toLocaleDateString("en-US")}</Field>
+              <Field label="Follow-up">{c.followUpDate ? new Date(c.followUpDate).toLocaleDateString("en-US") : "—"}</Field>
               <Field label="Missing Documents">
                 {c.missingDocuments.length ? c.missingDocuments.join(", ") : "None"}
               </Field>
@@ -82,7 +82,7 @@ function CaseDetail() {
                 <div key={t.id} className="flex items-center justify-between rounded-md border border-border p-3">
                   <div>
                     <p className="text-sm font-medium">{t.title}</p>
-                    <p className="text-xs text-muted-foreground">Due {new Date(t.dueDate).toLocaleDateString()}</p>
+                    <p className="text-xs text-muted-foreground">Due {new Date(t.dueDate).toLocaleDateString("en-US")}</p>
                   </div>
                   <StatusBadge value={t.status} />
                 </div>

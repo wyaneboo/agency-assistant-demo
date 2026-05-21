@@ -56,7 +56,7 @@ function TasksPage() {
                         </p>
                         <div className="mt-2 flex items-center justify-between">
                           <span className="text-xs text-muted-foreground">
-                            {new Date(t.dueDate).toLocaleDateString()}
+                            {new Date(t.dueDate).toLocaleDateString("en-US")}
                           </span>
                           <StatusBadge value={t.priority} />
                         </div>
@@ -86,7 +86,7 @@ function TasksPage() {
                   <tr key={t.id} className="hover:bg-accent/30">
                     <td className="px-4 py-3 font-medium">{t.title}</td>
                     <td className="px-4 py-3 text-muted-foreground">{usersService.get(t.assignedTo)?.name}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{new Date(t.dueDate).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{new Date(t.dueDate).toLocaleDateString("en-US")}</td>
                     <td className="px-4 py-3"><StatusBadge value={t.priority} /></td>
                     <td className="px-4 py-3"><StatusBadge value={t.status} /></td>
                   </tr>

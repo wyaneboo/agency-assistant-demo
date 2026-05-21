@@ -70,7 +70,7 @@ function Index() {
                 <div>
                   <p className="text-sm font-medium text-foreground">{t.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {userById(t.assignedTo)} · Due {new Date(t.dueDate).toLocaleDateString()}
+                    {userById(t.assignedTo)} · Due {new Date(t.dueDate).toLocaleDateString("en-US")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -92,7 +92,7 @@ function Index() {
               <div key={a.id} className="text-sm">
                 <p className="text-foreground">{a.action}</p>
                 <p className="text-xs text-muted-foreground">
-                  {a.entity} · {a.entityId} · {new Date(a.at).toLocaleDateString()}
+                  {a.entity} · {a.entityId} · {new Date(a.at).toLocaleDateString("en-US")}
                 </p>
               </div>
             ))}
@@ -116,7 +116,7 @@ function Index() {
                 <div>
                   <p className="text-sm font-medium text-foreground">{c.clientName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {c.id} · {userById(c.agentId)} · Follow-up {new Date(c.followUpDate!).toLocaleDateString()}
+                    {c.id} · {userById(c.agentId)} · Follow-up {new Date(c.followUpDate!).toLocaleDateString("en-US")}
                   </p>
                 </div>
                 <StatusBadge value={c.status} />
