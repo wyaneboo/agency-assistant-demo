@@ -1,14 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
-import { tasksService, usersService } from "@/services";
-import type { TaskStatus } from "@/types/domain";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Download, ChevronDown } from "lucide-react";
+import { usersService } from "@/services";
+import type { Task, TaskStatus } from "@/types/domain";
 import { cn } from "@/lib/utils";
+import { loadTasks, saveTasks, downloadCsv } from "@/lib/tasks-csv-store";
 
 const COLUMNS: TaskStatus[] = ["To Do", "In Progress", "Waiting", "Completed", "Overdue"];
 
@@ -19,15 +28,43 @@ export const Route = createFileRoute("/_authenticated/tasks")({
 
 function TasksPage() {
   const [view, setView] = useState<"kanban" | "list">("kanban");
-  const tasks = tasksService.list();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadTasks().then((t) => {
+      setTasks(t);
+      setLoading(false);
+    });
+  }, []);
+
+  const updateStatus = (id: string, status: TaskStatus) => {
+    setTasks((prev) => {
+      const next = prev.map((t) =>
+        t.id === id ? { ...t, status, updatedAt: new Date().toISOString() } : t,
+      );
+      saveTasks(next);
+      return next;
+    });
+  };
 
   return (
     <div>
       <PageHeader
         title="Tasks"
-        description="Kanban and list view of all team tasks."
-        actions={<Button><Plus className="mr-1.5 h-4 w-4" />New Task</Button>}
+        description="Kanban and list view of all team tasks. Stored as CSV."
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => downloadCsv(tasks)}>
+              <Download className="mr-1.5 h-4 w-4" />Export CSV
+            </Button>
+            <Button><Plus className="mr-1.5 h-4 w-4" />New Task</Button>
+          </div>
+        }
       />
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Loading tasks…</p>
+      ) : (
       <Tabs value={view} onValueChange={(v) => setView(v as "kanban" | "list")}>
         <TabsList>
           <TabsTrigger value="kanban">Kanban</TabsTrigger>
@@ -60,8 +97,28 @@ function TasksPage() {
                           </span>
                           <StatusBadge value={t.priority} />
                         </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm" className="mt-2 h-7 w-full justify-between text-xs">
+                              {t.status}
+                              <ChevronDown className="h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="start">
+                            <DropdownMenuLabel>Move to</DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            {COLUMNS.filter((s) => s !== t.status).map((s) => (
+                              <DropdownMenuItem key={s} onClick={() => updateStatus(t.id, s)}>
+                                {s}
+                              </DropdownMenuItem>
+                            ))}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     ))}
+                    {items.length === 0 && (
+                      <p className="py-4 text-center text-xs text-muted-foreground">No tasks</p>
+                    )}
                   </div>
                 </div>
               );
@@ -88,7 +145,23 @@ function TasksPage() {
                     <td className="px-4 py-3 text-muted-foreground">{usersService.get(t.assignedTo)?.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{new Date(t.dueDate).toLocaleDateString("en-US")}</td>
                     <td className="px-4 py-3"><StatusBadge value={t.priority} /></td>
-                    <td className="px-4 py-3"><StatusBadge value={t.status} /></td>
+                    <td className="px-4 py-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                            <StatusBadge value={t.status} />
+                            <ChevronDown className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {COLUMNS.map((s) => (
+                            <DropdownMenuItem key={s} onClick={() => updateStatus(t.id, s)}>
+                              {s}
+                            </DropdownMenuItem>
+                          ))}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -96,6 +169,7 @@ function TasksPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      )}
     </div>
   );
 }

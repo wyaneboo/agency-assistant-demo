@@ -68,7 +68,7 @@ export function parseCsv(csv: string): Task[] {
 
 export function serializeCsv(tasks: Task[]): string {
   const rows = tasks.map((t) =>
-    HEADERS.map((h) => escape(String((t as Record<string, unknown>)[h] ?? ""))).join(","),
+    HEADERS.map((h) => escape(String((t as unknown as Record<string, unknown>)[h] ?? ""))).join(","),
   );
   return [HEADERS.join(","), ...rows].join("\n");
 }
