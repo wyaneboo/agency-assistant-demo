@@ -18,6 +18,27 @@ const searchSchema = z.object({
   redirect: z.string().optional(),
 });
 
+const googleProviderSetupMessage =
+  "Google sign-in is not configured yet. Add the Google OAuth Client ID and Client Secret in Supabase Authentication > Providers > Google.";
+
+async function readOAuthProviderError(response: Response) {
+  if (response.ok || response.status < 400) return null;
+
+  try {
+    const payload = (await response.clone().json()) as { msg?: string; message?: string };
+    const message = payload.msg ?? payload.message;
+    if (!message) return "Google sign-in failed";
+
+    if (message.includes("missing OAuth secret") || message.includes("Unsupported provider")) {
+      return googleProviderSetupMessage;
+    }
+
+    return message;
+  } catch {
+    return "Google sign-in failed";
+  }
+}
+
 export const Route = createFileRoute("/login")({
   validateSearch: (s) => searchSchema.parse(s),
   beforeLoad: async () => {
@@ -76,14 +97,33 @@ function LoginPage() {
 
   const handleGoogle = async () => {
     setSubmitting(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: window.location.origin,
-      },
-    });
-    if (error) {
-      toast.error(error.message || "Google sign-in failed");
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          skipBrowserRedirect: true,
+        },
+      });
+
+      if (error) throw error;
+      if (!data.url) throw new Error("Google sign-in did not return a redirect URL");
+
+      try {
+        const response = await fetch(data.url, { redirect: "manual" });
+        const providerError = await readOAuthProviderError(response);
+        if (providerError) {
+          toast.error(providerError);
+          setSubmitting(false);
+          return;
+        }
+      } catch {
+        // If the browser cannot preflight the provider URL, continue with the normal OAuth redirect.
+      }
+
+      window.location.assign(data.url);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setSubmitting(false);
     }
   };

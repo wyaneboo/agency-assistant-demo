@@ -7,6 +7,11 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Environment
+.env
+.env.*
+!.env.example
+
 node_modules
 dist
 dist-ssr
@@ -14,9 +19,14 @@ dist-ssr
 .venv/
 .lovable/
 .vinxi
-.tanstack/**
+.tanstack/
 .nitro
 *.local
+coverage/
+playwright-report/
+test-results/
+.turbo/
+.cache/
 
 # Wrangler / Cloudflare
 .wrangler/

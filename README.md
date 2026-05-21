@@ -38,6 +38,30 @@ npm run dev -- --host 127.0.0.1 --port 5173
 
 Open `http://127.0.0.1:5173/login` and confirm the Agency Ops sign-in screen renders.
 
+## Google Login Setup
+
+Google login is handled by Supabase Auth. The local `.env` file only contains the Supabase project URL and publishable key; it must not contain the Google client secret.
+
+For project `bgvejguabisjurwwcatd`, configure Google OAuth as follows:
+
+1. In Google Cloud Console, create an OAuth client with application type `Web application`.
+2. Add this authorized redirect URI:
+
+```text
+https://bgvejguabisjurwwcatd.supabase.co/auth/v1/callback
+```
+
+3. In Supabase Dashboard, open `Authentication > Providers > Google`.
+4. Enable Google and paste the Google OAuth Client ID and Client Secret.
+5. In Supabase Auth URL settings, allow local development redirects such as:
+
+```text
+http://127.0.0.1:5173/
+http://localhost:8080/
+```
+
+The error `Unsupported provider: missing OAuth secret` means step 4 is not complete in Supabase.
+
 ## Test Run
 
 Run the production build check:
