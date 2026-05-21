@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { casesService, candidatesService, usersService } from "@/services";
+import { casesService, usersService } from "@/services";
 
 export const Route = createFileRoute("/_authenticated/agents")({
   head: () => ({ meta: [{ title: "Agents — Agency Ops" }] }),
@@ -18,7 +18,6 @@ function AgentsPage() {
           const myCases = casesService.byAgent(a.id);
           const open = myCases.filter((c) => !["Closed","Rejected","Issued"].includes(c.status));
           const followUps = myCases.filter((c) => c.followUpDate && new Date(c.followUpDate) < new Date()).length;
-          const refs = candidatesService.list().filter((c) => c.referredById === a.id).length;
           const totalANP = myCases.reduce((s, c) => s + c.anpEstimate, 0);
           return (
             <Card key={a.id}>
@@ -38,7 +37,6 @@ function AgentsPage() {
                   <Metric label="Open Cases" value={open.length} />
                   <Metric label="Overdue Follow-ups" value={followUps} />
                   <Metric label="Total Cases" value={myCases.length} />
-                  <Metric label="Referrals" value={refs} />
                   <Metric label="Total ANP" value={`$${totalANP.toLocaleString()}`} />
                 </dl>
               </CardContent>
