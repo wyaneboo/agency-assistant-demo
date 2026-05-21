@@ -1,7 +1,7 @@
 /**
  * Service layer — single boundary between UI and data.
  * Today: backed by in-memory mock data.
- * Tomorrow: swap with Lovable Cloud / Prisma / API calls without touching UI.
+ * Tomorrow: swap with Supabase, Prisma, or API calls without touching UI.
  * This is also the surface LangGraph AI agents will call.
  */
 import {
