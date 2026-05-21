@@ -23,11 +23,21 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
 
   // Client-side guard: if the user signs out while inside the app, bounce to /login.
+  // Wait until the auth state has resolved — otherwise the initial `user === null`
+ // from useAuth would redirect authenticated users to /login on every navigation.
   useEffect(() => {
     if (!loading && !user) {
       navigate({ to: "/login" });
     }
   }, [loading, user, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-background text-sm text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>
