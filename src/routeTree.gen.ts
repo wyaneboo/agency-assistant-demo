@@ -13,7 +13,6 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedTasksRouteImport } from './routes/_authenticated/tasks'
-import { Route as AuthenticatedRecruitmentRouteImport } from './routes/_authenticated/recruitment'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedClaimsRouteImport } from './routes/_authenticated/claims'
 import { Route as AuthenticatedCasesRouteImport } from './routes/_authenticated/cases'
@@ -40,12 +39,6 @@ const AuthenticatedTasksRoute = AuthenticatedTasksRouteImport.update({
   path: '/tasks',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedRecruitmentRoute =
-  AuthenticatedRecruitmentRouteImport.update({
-    id: '/recruitment',
-    path: '/recruitment',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedNotificationsRoute =
   AuthenticatedNotificationsRouteImport.update({
     id: '/notifications',
@@ -87,7 +80,6 @@ export interface FileRoutesByFullPath {
   '/cases': typeof AuthenticatedCasesRouteWithChildren
   '/claims': typeof AuthenticatedClaimsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/recruitment': typeof AuthenticatedRecruitmentRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
 }
@@ -98,7 +90,6 @@ export interface FileRoutesByTo {
   '/cases': typeof AuthenticatedCasesRouteWithChildren
   '/claims': typeof AuthenticatedClaimsRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/recruitment': typeof AuthenticatedRecruitmentRoute
   '/tasks': typeof AuthenticatedTasksRoute
   '/': typeof AuthenticatedIndexRoute
   '/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
@@ -112,7 +103,6 @@ export interface FileRoutesById {
   '/_authenticated/cases': typeof AuthenticatedCasesRouteWithChildren
   '/_authenticated/claims': typeof AuthenticatedClaimsRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
-  '/_authenticated/recruitment': typeof AuthenticatedRecruitmentRoute
   '/_authenticated/tasks': typeof AuthenticatedTasksRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
   '/_authenticated/cases/$caseId': typeof AuthenticatedCasesCaseIdRoute
@@ -127,7 +117,6 @@ export interface FileRouteTypes {
     | '/cases'
     | '/claims'
     | '/notifications'
-    | '/recruitment'
     | '/tasks'
     | '/cases/$caseId'
   fileRoutesByTo: FileRoutesByTo
@@ -138,7 +127,6 @@ export interface FileRouteTypes {
     | '/cases'
     | '/claims'
     | '/notifications'
-    | '/recruitment'
     | '/tasks'
     | '/'
     | '/cases/$caseId'
@@ -151,7 +139,6 @@ export interface FileRouteTypes {
     | '/_authenticated/cases'
     | '/_authenticated/claims'
     | '/_authenticated/notifications'
-    | '/_authenticated/recruitment'
     | '/_authenticated/tasks'
     | '/_authenticated/'
     | '/_authenticated/cases/$caseId'
@@ -190,13 +177,6 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof AuthenticatedTasksRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/recruitment': {
-      id: '/_authenticated/recruitment'
-      path: '/recruitment'
-      fullPath: '/recruitment'
-      preLoaderRoute: typeof AuthenticatedRecruitmentRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/notifications': {
@@ -261,7 +241,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedCasesRoute: typeof AuthenticatedCasesRouteWithChildren
   AuthenticatedClaimsRoute: typeof AuthenticatedClaimsRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
-  AuthenticatedRecruitmentRoute: typeof AuthenticatedRecruitmentRoute
   AuthenticatedTasksRoute: typeof AuthenticatedTasksRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -272,7 +251,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedCasesRoute: AuthenticatedCasesRouteWithChildren,
   AuthenticatedClaimsRoute: AuthenticatedClaimsRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
-  AuthenticatedRecruitmentRoute: AuthenticatedRecruitmentRoute,
   AuthenticatedTasksRoute: AuthenticatedTasksRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
@@ -288,3 +266,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

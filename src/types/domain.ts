@@ -56,34 +56,9 @@ export interface Task {
   status: TaskStatus;
   relatedCaseId?: string;
   relatedClaimId?: string;
-  relatedCandidateId?: string;
   createdAt: string;
   updatedAt: string;
   createdBy: string;
-}
-
-export type CandidateStage =
-  | "New Lead"
-  | "Contacted"
-  | "Interview Scheduled"
-  | "Attended"
-  | "Interested"
-  | "Follow-Up"
-  | "Joined"
-  | "Dropped";
-
-export interface Candidate {
-  id: string;
-  name: string;
-  phone: string;
-  source: string;
-  referredById?: string;
-  stage: CandidateStage;
-  interviewDate?: string;
-  notes: { id: string; text: string; at: string; by: string }[];
-  nextFollowUpDate?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export type ClaimStatus =
@@ -111,7 +86,7 @@ export interface Claim {
 
 export interface ActivityEntry {
   id: string;
-  entity: "case" | "task" | "claim" | "candidate" | "agent";
+  entity: "case" | "task" | "claim" | "agent";
   entityId: string;
   action: string;
   by: string;

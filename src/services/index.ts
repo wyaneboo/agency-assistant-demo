@@ -5,7 +5,7 @@
  * This is also the surface LangGraph AI agents will call.
  */
 import {
-  cases as _cases, tasks as _tasks, candidates as _candidates,
+  cases as _cases, tasks as _tasks,
   claims as _claims, users as _users, activities as _activities,
   notifications as _notifications,
 } from "./mock-data";
@@ -23,11 +23,6 @@ export const tasksService = {
   byStatus: (s: string) => _tasks.filter((t) => t.status === s),
 };
 
-export const candidatesService = {
-  list: () => _candidates,
-  get: (id: string) => _candidates.find((c) => c.id === id),
-  byStage: (stage: string) => _candidates.filter((c) => c.stage === stage),
-};
 
 export const claimsService = {
   list: () => _claims,
@@ -67,7 +62,6 @@ export const stats = () => {
     approvedUnpaid: all.filter((c) => c.status === "Pending Payment").length,
     overdueFollowUps,
     overdueTasks,
-    candidatesInPipeline: _candidates.filter((c) => !["Joined", "Dropped"].includes(c.stage)).length,
     openClaims: _claims.filter((c) => !["Closed", "Rejected", "Approved"].includes(c.status)).length,
     totalANP: all.reduce((s, c) => s + c.anpEstimate, 0),
   };

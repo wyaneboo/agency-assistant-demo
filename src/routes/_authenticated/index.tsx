@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import {
-  Briefcase, AlertTriangle, Banknote, ClockAlert, Users,
+  Briefcase, AlertTriangle, Banknote, ClockAlert,
   ShieldCheck, ListChecks, TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  casesService, tasksService, candidatesService, activityService,
+  casesService, tasksService, activityService,
   usersService, stats,
 } from "@/services";
 
@@ -41,7 +41,7 @@ function Index() {
     <div>
       <PageHeader
         title="Dashboard"
-        description="Operational overview of cases, tasks, claims, and recruitment."
+        description="Operational overview of cases, tasks, and claims."
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -49,9 +49,8 @@ function Index() {
         <StatCard label="Pending Underwriting" value={s.pendingUnderwriting} icon={AlertTriangle} tone="warning" />
         <StatCard label="Approved Unpaid" value={s.approvedUnpaid} icon={Banknote} tone="warning" />
         <StatCard label="Overdue Follow-ups" value={s.overdueFollowUps} icon={ClockAlert} tone="danger" />
-        <StatCard label="Recruitment Pipeline" value={s.candidatesInPipeline} icon={Users} />
-        <StatCard label="Open Claims" value={s.openClaims} icon={ShieldCheck} />
         <StatCard label="Overdue Tasks" value={s.overdueTasks} icon={ListChecks} tone="danger" />
+        <StatCard label="Open Claims" value={s.openClaims} icon={ShieldCheck} />
         <StatCard label="Total ANP" value={`$${s.totalANP.toLocaleString()}`} icon={TrendingUp} tone="success" />
       </div>
 

@@ -1,6 +1,5 @@
 import type {
   Case,
-  Candidate,
   Claim,
   Task,
   User,
@@ -83,8 +82,8 @@ export const tasks: Task[] = [
     createdAt: days(-1), updatedAt: now, createdBy: "u1",
   },
   {
-    id: "T-4", title: "Schedule interview — Jovan Wee", assignedTo: "u2",
-    dueDate: days(2), priority: "Medium", status: "To Do", relatedCandidateId: "R-2",
+    id: "T-4", title: "Prepare Q4 team presentation", assignedTo: "u2",
+    dueDate: days(2), priority: "Medium", status: "To Do",
     createdAt: days(-1), updatedAt: now, createdBy: "u1",
   },
   {
@@ -99,39 +98,6 @@ export const tasks: Task[] = [
   },
 ];
 
-export const candidates: Candidate[] = [
-  {
-    id: "R-1", name: "Hui Min Lau", phone: "+65 9111 2222", source: "Referral",
-    referredById: "u3", stage: "Contacted", nextFollowUpDate: days(2),
-    notes: [{ id: "n1", text: "Interested, asked for brochure.", at: days(-1), by: "u2" }],
-    createdAt: days(-3), updatedAt: now,
-  },
-  {
-    id: "R-2", name: "Jovan Wee", phone: "+65 9222 3333", source: "LinkedIn",
-    stage: "Interview Scheduled", interviewDate: days(2),
-    notes: [], createdAt: days(-5), updatedAt: now,
-  },
-  {
-    id: "R-3", name: "Felicia Ong", phone: "+65 9333 4444", source: "Walk-in",
-    stage: "New Lead", notes: [], createdAt: days(-1), updatedAt: now,
-  },
-  {
-    id: "R-4", name: "Brandon Teo", phone: "+65 9444 5555", source: "Referral",
-    referredById: "u4", stage: "Attended", nextFollowUpDate: days(1),
-    notes: [{ id: "n2", text: "Strong fit, decision pending.", at: days(-2), by: "u1" }],
-    createdAt: days(-10), updatedAt: now,
-  },
-  {
-    id: "R-5", name: "Nadia Karim", phone: "+65 9555 6666", source: "Job Portal",
-    stage: "Joined", notes: [], createdAt: days(-30), updatedAt: now,
-  },
-  {
-    id: "R-6", name: "Eric Sim", phone: "+65 9666 7777", source: "Referral",
-    referredById: "u5", stage: "Dropped",
-    notes: [{ id: "n3", text: "Took another offer.", at: days(-5), by: "u2" }],
-    createdAt: days(-20), updatedAt: now,
-  },
-];
 
 export const claims: Claim[] = [
   {
@@ -162,13 +128,11 @@ export const claims: Claim[] = [
 export const activities: ActivityEntry[] = [
   { id: "a1", entity: "case", entityId: "C-1002", action: "Status changed to Pending Payment", by: "u4", at: days(-1) },
   { id: "a2", entity: "task", entityId: "T-2", action: "Task marked Overdue", by: "system", at: days(0) },
-  { id: "a3", entity: "candidate", entityId: "R-2", action: "Interview scheduled", by: "u2", at: days(-1) },
-  { id: "a4", entity: "claim", entityId: "CL-2", action: "Claim submitted to insurer", by: "u2", at: days(-2) },
-  { id: "a5", entity: "case", entityId: "C-1004", action: "Policy issued", by: "u5", at: days(-3) },
+  { id: "a3", entity: "claim", entityId: "CL-2", action: "Claim submitted to insurer", by: "u2", at: days(-2) },
+  { id: "a4", entity: "case", entityId: "C-1004", action: "Policy issued", by: "u5", at: days(-3) },
 ];
 
 export const notifications: Notification[] = [
   { id: "N1", title: "Overdue follow-up", body: "Rachel Goh premium payment overdue.", read: false, at: days(0), kind: "warning" },
-  { id: "N2", title: "New candidate", body: "Felicia Ong added to pipeline.", read: false, at: days(-1), kind: "info" },
-  { id: "N3", title: "Claim approved", body: "CL-4 approved by insurer.", read: true, at: days(-3), kind: "success" },
+  { id: "N2", title: "Claim approved", body: "CL-4 approved by insurer.", read: true, at: days(-3), kind: "success" },
 ];

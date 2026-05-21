@@ -1,6 +1,6 @@
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
-  LayoutDashboard, Briefcase, ListChecks, Users, ShieldCheck,
+  LayoutDashboard, Briefcase, ListChecks, ShieldCheck,
   UserCog, Sparkles, Bell, LogOut,
 } from "lucide-react";
 import {
@@ -16,7 +16,6 @@ const main = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Cases", url: "/cases", icon: Briefcase },
   { title: "Tasks", url: "/tasks", icon: ListChecks },
-  { title: "Recruitment", url: "/recruitment", icon: Users },
   { title: "Claims", url: "/claims", icon: ShieldCheck },
   { title: "Agents", url: "/agents", icon: UserCog },
 ];
