@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Bell, Info, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { notificationsService } from "@/services";
 
-export const Route = createFileRoute("/notifications")({
+export const Route = createFileRoute("/_authenticated/notifications")({
   head: () => ({ meta: [{ title: "Notifications — Agency Ops" }] }),
   component: NotificationsPage,
 });

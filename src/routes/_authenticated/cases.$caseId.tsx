@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText } from "lucide-react";
 import { casesService, usersService, activityService, tasksService } from "@/services";
 
-export const Route = createFileRoute("/cases/$caseId")({
+export const Route = createFileRoute("/_authenticated/cases/$caseId")({
   component: CaseDetail,
   notFoundComponent: () => (
     <div className="p-8 text-center">

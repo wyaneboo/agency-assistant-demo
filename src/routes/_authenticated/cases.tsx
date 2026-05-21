@@ -17,7 +17,7 @@ const STATUSES: (CaseStatus | "All")[] = [
   "Approved", "Issued", "Closed", "Rejected",
 ];
 
-export const Route = createFileRoute("/cases")({
+export const Route = createFileRoute("/_authenticated/cases")({
   head: () => ({ meta: [{ title: "Cases — Agency Ops" }] }),
   component: CasesPage,
 });

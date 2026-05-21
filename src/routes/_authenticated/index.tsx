@@ -16,7 +16,7 @@ import {
   usersService, stats,
 } from "@/services";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   component: Index,
 });
 

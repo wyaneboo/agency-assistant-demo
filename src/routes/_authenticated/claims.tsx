@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { claimsService, usersService } from "@/services";
 
-export const Route = createFileRoute("/claims")({
+export const Route = createFileRoute("/_authenticated/claims")({
   head: () => ({ meta: [{ title: "Claims — Agency Ops" }] }),
   component: ClaimsPage,
 });

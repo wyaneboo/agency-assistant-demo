@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const COLUMNS: TaskStatus[] = ["To Do", "In Progress", "Waiting", "Completed", "Overdue"];
 
-export const Route = createFileRoute("/tasks")({
+export const Route = createFileRoute("/_authenticated/tasks")({
   head: () => ({ meta: [{ title: "Tasks — Agency Ops" }] }),
   component: TasksPage,
 });

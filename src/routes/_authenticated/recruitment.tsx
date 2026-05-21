@@ -10,7 +10,7 @@ const STAGES: CandidateStage[] = [
   "Interested", "Follow-Up", "Joined", "Dropped",
 ];
 
-export const Route = createFileRoute("/recruitment")({
+export const Route = createFileRoute("/_authenticated/recruitment")({
   head: () => ({ meta: [{ title: "Recruitment — Agency Ops" }] }),
   component: RecruitmentPage,
 });
