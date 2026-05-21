@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { claimsService, usersService } from "@/services";
 
-export const Route = createFileRoute("/claims")({
+export const Route = createFileRoute("/_authenticated/claims")({
   head: () => ({ meta: [{ title: "Claims — Agency Ops" }] }),
   component: ClaimsPage,
 });
@@ -40,7 +40,7 @@ function ClaimsPage() {
                 <td className="px-4 py-3">{c.clientName}</td>
                 <td className="px-4 py-3">{c.claimType}</td>
                 <td className="px-4 py-3 text-muted-foreground">{usersService.get(c.assignedAdminId)?.name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{new Date(c.submissionDate).toLocaleDateString()}</td>
+                <td className="px-4 py-3 text-muted-foreground">{new Date(c.submissionDate).toLocaleDateString("en-US")}</td>
                 <td className="px-4 py-3 text-muted-foreground">
                   {c.missingDocuments.length ? c.missingDocuments.join(", ") : "None"}
                 </td>

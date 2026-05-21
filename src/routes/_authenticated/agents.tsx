@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { casesService, candidatesService, usersService } from "@/services";
 
-export const Route = createFileRoute("/agents")({
+export const Route = createFileRoute("/_authenticated/agents")({
   head: () => ({ meta: [{ title: "Agents — Agency Ops" }] }),
   component: AgentsPage,
 });

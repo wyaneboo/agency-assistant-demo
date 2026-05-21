@@ -16,7 +16,7 @@ const SUGGESTIONS = [
 
 type Msg = { role: "user" | "assistant"; text: string };
 
-export const Route = createFileRoute("/assistant")({
+export const Route = createFileRoute("/_authenticated/assistant")({
   head: () => ({ meta: [{ title: "AI Assistant — Agency Ops" }] }),
   component: AssistantPage,
 });

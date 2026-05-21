@@ -17,7 +17,7 @@ const STATUSES: (CaseStatus | "All")[] = [
   "Approved", "Issued", "Closed", "Rejected",
 ];
 
-export const Route = createFileRoute("/cases")({
+export const Route = createFileRoute("/_authenticated/cases")({
   head: () => ({ meta: [{ title: "Cases — Agency Ops" }] }),
   component: CasesPage,
 });
@@ -84,7 +84,7 @@ function CasesPage() {
                   <td className="px-4 py-3"><StatusBadge value={c.status} /></td>
                   <td className="px-4 py-3"><StatusBadge value={c.priority} /></td>
                   <td className="px-4 py-3 text-muted-foreground">
-                    {c.followUpDate ? new Date(c.followUpDate).toLocaleDateString() : "—"}
+                    {c.followUpDate ? new Date(c.followUpDate).toLocaleDateString("en-US") : "—"}
                   </td>
                 </tr>
               ))}

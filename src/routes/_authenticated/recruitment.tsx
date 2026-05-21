@@ -10,7 +10,7 @@ const STAGES: CandidateStage[] = [
   "Interested", "Follow-Up", "Joined", "Dropped",
 ];
 
-export const Route = createFileRoute("/recruitment")({
+export const Route = createFileRoute("/_authenticated/recruitment")({
   head: () => ({ meta: [{ title: "Recruitment — Agency Ops" }] }),
   component: RecruitmentPage,
 });
@@ -45,7 +45,7 @@ function RecruitmentPage() {
                     )}
                     {c.nextFollowUpDate && (
                       <p className="mt-1 text-xs text-warning-foreground">
-                        Follow-up {new Date(c.nextFollowUpDate).toLocaleDateString()}
+                        Follow-up {new Date(c.nextFollowUpDate).toLocaleDateString("en-US")}
                       </p>
                     )}
                   </div>
