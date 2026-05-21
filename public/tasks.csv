@@ -1,0 +1,7 @@
+id,title,assignedTo,dueDate,priority,status,relatedCaseId,relatedClaimId,createdBy
+T-1,Chase medical report for Tan Wei Ming,u3,2026-05-22,High,In Progress,C-1001,,u2
+T-2,Call Rachel Goh re: premium payment,u4,2026-05-20,Urgent,Overdue,C-1002,,u2
+T-3,Prepare Q4 production report,u1,2026-05-26,Medium,To Do,,,u1
+T-4,Prepare Q4 team presentation,u2,2026-05-23,Medium,To Do,,,u1
+T-5,Submit claim documents — Linda Chua,u2,2026-05-24,High,Waiting,,CL-2,u2
+T-6,Weekly team sync notes,u1,2026-05-18,Low,Completed,,,u1
