@@ -13,11 +13,12 @@ from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.tracers.langchain import wait_for_all_tracers
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, START, StateGraph
 
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemma-4-31b-it"
 
 TABLES: dict[str, dict[str, str]] = {
     "cases": {
@@ -260,10 +261,19 @@ def build_agent():
     return graph.compile()
 
 
+agent = build_agent()
+
+
 def ask_agent(question: str, *, limit: int = 25) -> str:
     """Run the compiled agent for a single question and return its answer."""
-    app = build_agent()
-    result = app.invoke({"question": question, "limit": limit})
+    result = agent.invoke(
+        {"question": question, "limit": limit},
+        config={
+            "run_name": "agency_hub_agent",
+            "tags": ["agency-hub", "gemini"],
+            "metadata": {"source": "cli"},
+        },
+    )
     return result["answer"]
 
 
@@ -296,6 +306,8 @@ def main() -> int:
     except Exception as exc:
         print(f"Agent error: {exc}", file=sys.stderr)
         return 1
+    finally:
+        wait_for_all_tracers()
 
     return 0
 

@@ -1,0 +1,9 @@
+{
+  "dependencies": ["./"],
+  "graphs": {
+    "agent": "./agentai_main.py:agent"
+  },
+  "env": "./.env",
+  "python_version": "3.13",
+  "pip_installer": "pip"
+}

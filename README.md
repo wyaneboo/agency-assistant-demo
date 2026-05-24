@@ -25,7 +25,16 @@ GOOGLE_API_KEY=
 Optional model override:
 
 ```bash
-GEMINI_MODEL=gemma-4-31b-it
+GEMINI_MODEL=gemini-2.5-flash
+```
+
+Optional LangSmith tracing variables:
+
+```bash
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=
+LANGSMITH_PROJECT=agency-hub-agent
+# LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ```
 
 ## Install
@@ -55,7 +64,7 @@ Open `http://127.0.0.1:5173/login` and confirm the Agency Ops sign-in screen ren
 Install the Python agent dependencies into the local virtual environment:
 
 ```bash
-.\.venv\Scripts\python.exe -m pip install -r requirements-agent.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 Ask Gemini about the `cases`, `claims`, and `tasks` tables:
@@ -65,6 +74,38 @@ Ask Gemini about the `cases`, `claims`, and `tasks` tables:
 ```
 
 The agent reads Supabase through the REST API. For local server-side use, set `SUPABASE_SERVICE_ROLE_KEY` in `.env`. To test with RLS as a signed-in user, set `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_ACCESS_TOKEN` instead.
+
+Start the LangGraph development server:
+
+```bash
+$env:PYTHONIOENCODING = "utf-8"
+.\.venv\Scripts\langgraph.exe dev --no-browser --allow-blocking
+```
+
+The default API is `http://localhost:2024`, with docs at `http://localhost:2024/docs`. In LangSmith Studio, use:
+
+```text
+https://smith.langchain.com/studio/?baseUrl=http://127.0.0.1:2024
+```
+
+Test the running server from PowerShell:
+
+```powershell
+$body = @{
+  assistant_id = "agent"
+  input = @{
+    question = "Which tasks are overdue?"
+    limit = 10
+  }
+  stream_mode = "values"
+} | ConvertTo-Json -Depth 5
+
+Invoke-RestMethod `
+  -Method Post `
+  -Uri "http://localhost:2024/runs/wait" `
+  -ContentType "application/json" `
+  -Body $body
+```
 
 ## Google Login Setup
 
