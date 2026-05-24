@@ -16,6 +16,18 @@ SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ```
 
+Required AI variable for LangChain/LangGraph agents with Gemini:
+
+```bash
+GOOGLE_API_KEY=
+```
+
+Optional model override:
+
+```bash
+GEMINI_MODEL=gemma-4-31b-it
+```
+
 ## Install
 
 ```bash
@@ -37,6 +49,22 @@ npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
 Open `http://127.0.0.1:5173/login` and confirm the Agency Ops sign-in screen renders.
+
+## Python Agent
+
+Install the Python agent dependencies into the local virtual environment:
+
+```bash
+.\.venv\Scripts\python.exe -m pip install -r requirements-agent.txt
+```
+
+Ask Gemini about the `cases`, `claims`, and `tasks` tables:
+
+```bash
+.\.venv\Scripts\python.exe agentai_main.py "Which tasks are overdue?"
+```
+
+The agent reads Supabase through the REST API. For local server-side use, set `SUPABASE_SERVICE_ROLE_KEY` in `.env`. To test with RLS as a signed-in user, set `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_ACCESS_TOKEN` instead.
 
 ## Google Login Setup
 
