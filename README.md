@@ -34,6 +34,7 @@ Optional LangSmith tracing variables:
 LANGSMITH_TRACING=true
 LANGSMITH_API_KEY=
 LANGSMITH_PROJECT=agency-hub-agent
+LANGCHAIN_CALLBACKS_BACKGROUND=false
 # LANGSMITH_ENDPOINT=https://api.smith.langchain.com
 ```
 
