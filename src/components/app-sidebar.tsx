@@ -8,6 +8,7 @@ import {
   SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
   SidebarMenuItem, SidebarFooter,
 } from "@/components/ui/sidebar";
+import { BrandLogo } from "@/components/brand-logo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,12 +52,12 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
-        <div className="flex items-center gap-2 px-2 py-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground font-bold">
-            A
+        <div className="flex items-center gap-2 px-2 py-3 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg shadow-sm ring-1 ring-sidebar-border">
+            <BrandLogo variant="mark" tone="dark" className="h-9 w-9 object-cover" />
           </div>
           <div className="group-data-[collapsible=icon]:hidden">
-            <div className="text-sm font-semibold text-sidebar-foreground">Agency Ops</div>
+            <div className="text-sm font-semibold text-sidebar-foreground">THL Operations Hub</div>
             <div className="text-xs text-sidebar-foreground/60">Operations Tracker</div>
           </div>
         </div>

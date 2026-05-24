@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/brand-logo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,7 +48,7 @@ export const Route = createFileRoute("/login")({
       throw redirect({ to: "/" });
     }
   },
-  head: () => ({ meta: [{ title: "Sign in — Agency Ops" }] }),
+  head: () => ({ meta: [{ title: "Sign in - THL Operations Hub" }] }),
   component: LoginPage,
 });
 
@@ -132,10 +133,12 @@ function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold">
-            A
-          </div>
-          <CardTitle>Agency Ops</CardTitle>
+          <BrandLogo
+            variant="full"
+            tone="light"
+            className="mx-auto mb-3 h-24 w-full max-w-xs rounded-lg"
+          />
+          <CardTitle>THL Operations Hub</CardTitle>
           <CardDescription>Sign in to access the operations tracker</CardDescription>
         </CardHeader>
         <CardContent>

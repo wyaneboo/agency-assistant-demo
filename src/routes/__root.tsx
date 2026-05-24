@@ -75,17 +75,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Agency Ops — Insurance Operations Tracker" },
-      { name: "description", content: "Central operations tracker for insurance agencies: cases, follow-ups, claims, recruitment, and tasks." },
-      { property: "og:title", content: "Agency Ops" },
-      { property: "og:description", content: "Insurance agency operations tracker." },
+      { title: "THL Operations Hub - Insurance Operations Tracker" },
+      { name: "description", content: "Central THL operations tracker for insurance agencies: cases, follow-ups, claims, recruitment, and tasks." },
+      { property: "og:title", content: "THL Operations Hub" },
+      { property: "og:description", content: "Insurance agency operations tracker for Teamwork Harmonious Leadership." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
     links: [
       {
         rel: "icon",
-        href: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%230f172a'/%3E%3Ctext x='32' y='43' text-anchor='middle' font-size='34' font-family='Arial' fill='white'%3EA%3C/text%3E%3C/svg%3E",
+        href: "/brand/thl-favicon.png",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "/brand/thl-favicon.png",
       },
       {
         rel: "stylesheet",

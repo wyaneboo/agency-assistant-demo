@@ -5,7 +5,7 @@ import { Bell, Info, AlertTriangle, CheckCircle2, XCircle } from "lucide-react";
 import { notificationsService } from "@/services";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
-  head: () => ({ meta: [{ title: "Notifications — Agency Ops" }] }),
+  head: () => ({ meta: [{ title: "Notifications - THL Operations Hub" }] }),
   component: NotificationsPage,
 });
 

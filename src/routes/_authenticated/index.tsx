@@ -1,41 +1,113 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Briefcase, AlertTriangle, Banknote, ClockAlert,
-  ShieldCheck, ListChecks, TrendingUp,
+  Briefcase,
+  AlertTriangle,
+  Banknote,
+  ClockAlert,
+  ShieldCheck,
+  ListChecks,
+  TrendingUp,
 } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { StatCard } from "@/components/stat-card";
 import { StatusBadge } from "@/components/status-badge";
-import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  casesService, tasksService, activityService,
-  usersService, stats,
-} from "@/services";
+import { casesService, claimsService, activityService, usersService } from "@/services";
+import { loadAllTasks } from "@/lib/tasks-csv-store";
+import type { Case, Claim, Task } from "@/types/domain";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Index,
 });
 
 function Index() {
-  const s = stats();
+  const [dashboardCases, setDashboardCases] = useState<Case[]>([]);
+  const [dashboardClaims, setDashboardClaims] = useState<Claim[]>([]);
+  const [dashboardTasks, setDashboardTasks] = useState<Task[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
   const userById = (id: string) => usersService.get(id)?.name ?? id;
-  const upcomingTasks = tasksService.list()
-    .filter((t) => t.status !== "Completed")
-    .sort((a, b) => +new Date(a.dueDate) - +new Date(b.dueDate))
-    .slice(0, 5);
-  const recentActivity = activityService.list().slice(0, 6);
-  const overdueFollowUps = casesService.list().filter(
-    (c) => c.followUpDate && new Date(c.followUpDate) < new Date()
+  const openClaims = useMemo(
+    () =>
+      dashboardClaims.filter((c) => !["Closed", "Rejected", "Approved"].includes(c.status)).length,
+    [dashboardClaims],
   );
-  const agentActivity = usersService.agents().map((a) => ({
-    agent: a,
-    cases: casesService.byAgent(a.id).length,
-    open: casesService.byAgent(a.id).filter((c) => !["Closed","Rejected","Issued"].includes(c.status)).length,
-  }));
+
+  const caseStats = useMemo(
+    () => ({
+      activeCases: dashboardCases.filter(
+        (c) => !["Closed", "Rejected", "Issued"].includes(c.status),
+      ).length,
+      pendingUnderwriting: dashboardCases.filter((c) => c.status === "Pending Underwriting").length,
+      approvedUnpaid: dashboardCases.filter((c) => c.status === "Pending Payment").length,
+      totalANP: dashboardCases.reduce((sum, c) => sum + c.anpEstimate, 0),
+    }),
+    [dashboardCases],
+  );
+  const upcomingTasks = useMemo(
+    () =>
+      dashboardTasks
+        .filter((t) => t.status !== "Completed")
+        .sort((a, b) => +new Date(a.dueDate) - +new Date(b.dueDate))
+        .slice(0, 5),
+    [dashboardTasks],
+  );
+  const overdueTasks = useMemo(
+    () =>
+      dashboardTasks.filter((t) => t.status !== "Completed" && new Date(t.dueDate) < new Date())
+        .length,
+    [dashboardTasks],
+  );
+  const recentActivity = activityService.list().slice(0, 6);
+  const overdueFollowUps = useMemo(
+    () => dashboardCases.filter((c) => c.followUpDate && new Date(c.followUpDate) < new Date()),
+    [dashboardCases],
+  );
+  const agentActivity = useMemo(
+    () =>
+      usersService.agents().map((a) => {
+        const agentCases = dashboardCases.filter((c) => c.agentId === a.id);
+        return {
+          agent: a,
+          cases: agentCases.length,
+          open: agentCases.filter((c) => !["Closed", "Rejected", "Issued"].includes(c.status))
+            .length,
+        };
+      }),
+    [dashboardCases],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    setDataLoading(true);
+    setDataError(null);
+
+    Promise.all([casesService.list(), loadAllTasks(), claimsService.list()])
+      .then(([loadedCases, loadedTasks, loadedClaims]) => {
+        if (cancelled) return;
+        setDashboardCases(loadedCases);
+        setDashboardTasks(loadedTasks);
+        setDashboardClaims(loadedClaims);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setDashboardCases([]);
+          setDashboardTasks([]);
+          setDashboardClaims([]);
+          setDataError(err instanceof Error ? err.message : "Unable to load dashboard data.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setDataLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div>
@@ -44,14 +116,49 @@ function Index() {
         description="Operational overview of cases, tasks, and claims."
       />
 
+      {dataError && (
+        <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {dataError}
+        </p>
+      )}
+
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active Cases" value={s.activeCases} icon={Briefcase} />
-        <StatCard label="Pending Underwriting" value={s.pendingUnderwriting} icon={AlertTriangle} tone="warning" />
-        <StatCard label="Approved Unpaid" value={s.approvedUnpaid} icon={Banknote} tone="warning" />
-        <StatCard label="Overdue Follow-ups" value={s.overdueFollowUps} icon={ClockAlert} tone="danger" />
-        <StatCard label="Overdue Tasks" value={s.overdueTasks} icon={ListChecks} tone="danger" />
-        <StatCard label="Open Claims" value={s.openClaims} icon={ShieldCheck} />
-        <StatCard label="Total ANP" value={`$${s.totalANP.toLocaleString()}`} icon={TrendingUp} tone="success" />
+        <StatCard
+          label="Active Cases"
+          value={dataLoading ? "-" : caseStats.activeCases}
+          icon={Briefcase}
+        />
+        <StatCard
+          label="Pending Underwriting"
+          value={dataLoading ? "-" : caseStats.pendingUnderwriting}
+          icon={AlertTriangle}
+          tone="warning"
+        />
+        <StatCard
+          label="Approved Unpaid"
+          value={dataLoading ? "-" : caseStats.approvedUnpaid}
+          icon={Banknote}
+          tone="warning"
+        />
+        <StatCard
+          label="Overdue Follow-ups"
+          value={dataLoading ? "-" : overdueFollowUps.length}
+          icon={ClockAlert}
+          tone="danger"
+        />
+        <StatCard
+          label="Overdue Tasks"
+          value={dataLoading ? "-" : overdueTasks}
+          icon={ListChecks}
+          tone="danger"
+        />
+        <StatCard label="Open Claims" value={dataLoading ? "-" : openClaims} icon={ShieldCheck} />
+        <StatCard
+          label="Total ANP"
+          value={dataLoading ? "-" : `$${caseStats.totalANP.toLocaleString()}`}
+          icon={TrendingUp}
+          tone="success"
+        />
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -59,13 +166,24 @@ function Index() {
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle>Upcoming Tasks</CardTitle>
-              <CardDescription>Next 5 tasks by due date</CardDescription>
+              <CardDescription>Next 5 Kanban tasks by due date</CardDescription>
             </div>
-            <Button asChild variant="outline" size="sm"><Link to="/tasks">View all</Link></Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/tasks">View all</Link>
+            </Button>
           </CardHeader>
           <CardContent className="space-y-2">
+            {dataLoading && (
+              <p className="text-sm text-muted-foreground">Loading Kanban tasks...</p>
+            )}
+            {!dataLoading && upcomingTasks.length === 0 && (
+              <p className="text-sm text-muted-foreground">No upcoming tasks.</p>
+            )}
             {upcomingTasks.map((t) => (
-              <div key={t.id} className="flex items-center justify-between rounded-md border border-border p-3">
+              <div
+                key={t.id}
+                className="flex items-center justify-between rounded-md border border-border p-3"
+              >
                 <div>
                   <p className="text-sm font-medium text-foreground">{t.title}</p>
                   <p className="text-xs text-muted-foreground">
@@ -110,12 +228,17 @@ function Index() {
               <p className="text-sm text-muted-foreground">No overdue follow-ups.</p>
             )}
             {overdueFollowUps.map((c) => (
-              <Link to="/cases/$caseId" params={{ caseId: c.id }} key={c.id}
-                className="flex items-center justify-between rounded-md border border-border p-3 hover:bg-accent/40">
+              <Link
+                to="/cases/$caseId"
+                params={{ caseId: c.id }}
+                key={c.id}
+                className="flex items-center justify-between rounded-md border border-border p-3 hover:bg-accent/40"
+              >
                 <div>
                   <p className="text-sm font-medium text-foreground">{c.clientName}</p>
                   <p className="text-xs text-muted-foreground">
-                    {c.id} · {userById(c.agentId)} · Follow-up {new Date(c.followUpDate!).toLocaleDateString("en-US")}
+                    {c.id} · {userById(c.agentId)} · Follow-up{" "}
+                    {new Date(c.followUpDate!).toLocaleDateString("en-US")}
                   </p>
                 </div>
                 <StatusBadge value={c.status} />
@@ -131,7 +254,10 @@ function Index() {
           </CardHeader>
           <CardContent className="space-y-2">
             {agentActivity.map((a) => (
-              <div key={a.agent.id} className="flex items-center justify-between rounded-md border border-border p-3">
+              <div
+                key={a.agent.id}
+                className="flex items-center justify-between rounded-md border border-border p-3"
+              >
                 <div>
                   <p className="text-sm font-medium text-foreground">{a.agent.name}</p>
                   <p className="text-xs text-muted-foreground">{a.agent.email}</p>

@@ -17,14 +17,14 @@ const SUGGESTIONS = [
 type Msg = { role: "user" | "assistant"; text: string };
 
 export const Route = createFileRoute("/_authenticated/assistant")({
-  head: () => ({ meta: [{ title: "AI Assistant — Agency Ops" }] }),
+  head: () => ({ meta: [{ title: "AI Assistant - THL Operations Hub" }] }),
   component: AssistantPage,
 });
 
 function AssistantPage() {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Msg[]>([
-    { role: "assistant", text: "Hi — I'm your Agency Ops assistant. AI is not wired up yet, but the surface is ready. Try a suggestion below." },
+    { role: "assistant", text: "Hi - I'm your THL Operations Hub assistant. AI is not wired up yet, but the surface is ready. Try a suggestion below." },
   ]);
 
   const send = (text: string) => {

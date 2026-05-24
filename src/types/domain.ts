@@ -39,18 +39,16 @@ export interface Case {
   createdBy: string;
 }
 
-export type TaskStatus =
-  | "To Do"
-  | "In Progress"
-  | "Waiting"
-  | "Completed"
-  | "Overdue";
+export type TaskStatus = "To Do" | "In Progress" | "Waiting" | "Completed" | "Overdue";
 
 export interface Task {
   id: string;
   title: string;
   description?: string;
   assignedTo: string;
+  boardDate?: string;
+  carrySourceId?: string;
+  carrySourceDate?: string;
   dueDate: string;
   priority: Priority;
   status: TaskStatus;

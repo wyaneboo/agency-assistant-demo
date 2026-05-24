@@ -47,7 +47,7 @@ function AuthenticatedLayout() {
           <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur">
             <SidebarTrigger />
             <div className="text-sm text-muted-foreground">
-              Insurance Agency Operations
+              THL Insurance Agency Operations
             </div>
           </header>
           <main className="flex-1 px-6 py-6">

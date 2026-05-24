@@ -11,44 +11,65 @@ export const Route = createFileRoute("/_authenticated/cases/$caseId")({
   notFoundComponent: () => (
     <div className="p-8 text-center">
       <p className="text-sm text-muted-foreground">Case not found.</p>
-      <Link to="/cases" className="text-primary hover:underline">Back to cases</Link>
+      <Link to="/cases" className="text-primary hover:underline">
+        Back to cases
+      </Link>
     </div>
   ),
-  loader: ({ params }) => {
+  loader: async ({ params }) => {
     const c = casesService.get(params.caseId);
-    if (!c) throw notFound();
-    return c;
+    const relatedTasks = tasksService.byCase(params.caseId);
+    const [loadedCase, loadedTasks] = await Promise.all([c, relatedTasks]);
+    if (!loadedCase) throw notFound();
+    return { case: loadedCase, relatedTasks: loadedTasks };
   },
 });
 
 function CaseDetail() {
-  const c = Route.useLoaderData();
+  const { case: c, relatedTasks } = Route.useLoaderData();
   const agent = usersService.get(c.agentId);
   const activity = activityService.forEntity("case", c.id);
-  const relatedTasks = tasksService.list().filter((t) => t.relatedCaseId === c.id);
 
   return (
     <div>
       <Button asChild variant="ghost" size="sm" className="mb-3 -ml-2">
-        <Link to="/cases"><ArrowLeft className="mr-1.5 h-4 w-4" />Back</Link>
+        <Link to="/cases">
+          <ArrowLeft className="mr-1.5 h-4 w-4" />
+          Back
+        </Link>
       </Button>
       <PageHeader
         title={`${c.id} — ${c.clientName}`}
         description={`${c.productType} · ${agent?.name}`}
-        actions={<><Button variant="outline">Edit</Button><Button>Add Note</Button></>}
+        actions={
+          <>
+            <Button variant="outline">Edit</Button>
+            <Button>Add Note</Button>
+          </>
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
-          <CardHeader><CardTitle>Case Details</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Case Details</CardTitle>
+          </CardHeader>
           <CardContent>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
-              <Field label="Status"><StatusBadge value={c.status} /></Field>
-              <Field label="Priority"><StatusBadge value={c.priority} /></Field>
+              <Field label="Status">
+                <StatusBadge value={c.status} />
+              </Field>
+              <Field label="Priority">
+                <StatusBadge value={c.priority} />
+              </Field>
               <Field label="Premium">${c.premium.toLocaleString()}</Field>
               <Field label="ANP / FYP">${c.anpEstimate.toLocaleString()}</Field>
-              <Field label="Submitted">{new Date(c.submittedDate).toLocaleDateString("en-US")}</Field>
-              <Field label="Follow-up">{c.followUpDate ? new Date(c.followUpDate).toLocaleDateString("en-US") : "—"}</Field>
+              <Field label="Submitted">
+                {new Date(c.submittedDate).toLocaleDateString("en-US")}
+              </Field>
+              <Field label="Follow-up">
+                {c.followUpDate ? new Date(c.followUpDate).toLocaleDateString("en-US") : "—"}
+              </Field>
               <Field label="Missing Documents">
                 {c.missingDocuments.length ? c.missingDocuments.join(", ") : "None"}
               </Field>
@@ -58,9 +79,13 @@ function CaseDetail() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Activity Timeline</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Activity Timeline</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
-            {activity.length === 0 && <p className="text-sm text-muted-foreground">No activity yet.</p>}
+            {activity.length === 0 && (
+              <p className="text-sm text-muted-foreground">No activity yet.</p>
+            )}
             {activity.map((a) => (
               <div key={a.id} className="border-l-2 border-primary/40 pl-3">
                 <p className="text-sm text-foreground">{a.action}</p>
@@ -72,17 +97,27 @@ function CaseDetail() {
       </div>
 
       <Card className="mt-4">
-        <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-4 w-4" />Related Tasks</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Related Tasks
+          </CardTitle>
+        </CardHeader>
         <CardContent>
           {relatedTasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">No tasks linked.</p>
           ) : (
             <div className="space-y-2">
               {relatedTasks.map((t) => (
-                <div key={t.id} className="flex items-center justify-between rounded-md border border-border p-3">
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between rounded-md border border-border p-3"
+                >
                   <div>
                     <p className="text-sm font-medium">{t.title}</p>
-                    <p className="text-xs text-muted-foreground">Due {new Date(t.dueDate).toLocaleDateString("en-US")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Due {new Date(t.dueDate).toLocaleDateString("en-US")}
+                    </p>
                   </div>
                   <StatusBadge value={t.status} />
                 </div>
