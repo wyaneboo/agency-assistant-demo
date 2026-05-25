@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { Fragment, type ReactNode, useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,121 @@ const INITIAL_MESSAGE: Msg = {
   text: "Hi - I'm your THL Operations Hub assistant. Ask me about cases, claims, and tasks.",
 };
 
+let sessionMessages: Msg[] = [INITIAL_MESSAGE];
+
+function renderInlineMarkdown(text: string): ReactNode[] {
+  const nodes: ReactNode[] = [];
+  const pattern = /(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\(https?:\/\/[^)\s]+\))/g;
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(pattern)) {
+    const value = match[0];
+    const index = match.index ?? 0;
+
+    if (index > lastIndex) {
+      nodes.push(text.slice(lastIndex, index));
+    }
+
+    if (value.startsWith("**")) {
+      nodes.push(<strong key={index}>{value.slice(2, -2)}</strong>);
+    } else if (value.startsWith("`")) {
+      nodes.push(
+        <code key={index} className="rounded bg-background/80 px-1 py-0.5 text-[0.85em]">
+          {value.slice(1, -1)}
+        </code>,
+      );
+    } else {
+      const linkMatch = /^\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)$/.exec(value);
+      if (linkMatch) {
+        nodes.push(
+          <a
+            key={index}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            {linkMatch[1]}
+          </a>,
+        );
+      } else {
+        nodes.push(value);
+      }
+    }
+
+    lastIndex = index + value.length;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex));
+  }
+
+  return nodes;
+}
+
+function MarkdownMessage({ text }: { text: string }) {
+  const blocks = text.split(/\n{2,}/);
+
+  return (
+    <div className="space-y-2">
+      {blocks.map((block, blockIndex) => {
+        const trimmed = block.trim();
+        if (!trimmed) return null;
+
+        if (trimmed.startsWith("```")) {
+          const code = trimmed.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, "");
+          return (
+            <pre
+              key={blockIndex}
+              className="overflow-x-auto rounded-md bg-background/80 p-2 text-xs"
+            >
+              <code>{code}</code>
+            </pre>
+          );
+        }
+
+        const lines = trimmed.split("\n");
+        const unorderedItems = lines
+          .map((line) => /^[-*]\s+(.+)$/.exec(line.trim()))
+          .filter((match): match is RegExpExecArray => Boolean(match));
+        if (unorderedItems.length === lines.length) {
+          return (
+            <ul key={blockIndex} className="list-disc space-y-1 pl-4">
+              {unorderedItems.map((item, itemIndex) => (
+                <li key={itemIndex}>{renderInlineMarkdown(item[1])}</li>
+              ))}
+            </ul>
+          );
+        }
+
+        const orderedItems = lines
+          .map((line) => /^\d+\.\s+(.+)$/.exec(line.trim()))
+          .filter((match): match is RegExpExecArray => Boolean(match));
+        if (orderedItems.length === lines.length) {
+          return (
+            <ol key={blockIndex} className="list-decimal space-y-1 pl-4">
+              {orderedItems.map((item, itemIndex) => (
+                <li key={itemIndex}>{renderInlineMarkdown(item[1])}</li>
+              ))}
+            </ol>
+          );
+        }
+
+        return (
+          <p key={blockIndex}>
+            {lines.map((line, lineIndex) => (
+              <Fragment key={lineIndex}>
+                {lineIndex > 0 && <br />}
+                {renderInlineMarkdown(line)}
+              </Fragment>
+            ))}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export const Route = createFileRoute("/_authenticated/assistant")({
   head: () => ({ meta: [{ title: "AI Assistant - THL Operations Hub" }] }),
   component: AssistantPage,
@@ -31,15 +146,20 @@ export const Route = createFileRoute("/_authenticated/assistant")({
 function AssistantPage() {
   const askAssistantFn = useServerFn(askAssistant);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Msg[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<Msg[]>(() => sessionMessages);
   const [pending, setPending] = useState(false);
+
+  const saveMessages = (nextMessages: Msg[]) => {
+    sessionMessages = nextMessages;
+    setMessages(nextMessages);
+  };
 
   const send = async (text: string) => {
     const question = text.trim();
     if (!question || pending) return;
 
-    const history = messages;
-    setMessages((current) => [...current, { role: "user", text: question }]);
+    const history = sessionMessages;
+    saveMessages([...history, { role: "user", text: question }]);
     setInput("");
     setPending(true);
 
@@ -52,10 +172,10 @@ function AssistantPage() {
         },
       });
 
-      setMessages((current) => [...current, { role: "assistant", text: response.answer }]);
+      saveMessages([...sessionMessages, { role: "assistant", text: response.answer }]);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Assistant request failed.";
-      setMessages((current) => [...current, { role: "assistant", text: message }]);
+      saveMessages([...sessionMessages, { role: "assistant", text: message }]);
     } finally {
       setPending(false);
     }
@@ -63,7 +183,7 @@ function AssistantPage() {
 
   const startNewChat = () => {
     setInput("");
-    setMessages([INITIAL_MESSAGE]);
+    saveMessages([INITIAL_MESSAGE]);
   };
 
   return (
@@ -102,7 +222,11 @@ function AssistantPage() {
                       : "bg-muted text-foreground"
                   }`}
                 >
-                  {message.text}
+                  {message.role === "assistant" ? (
+                    <MarkdownMessage text={message.text} />
+                  ) : (
+                    message.text
+                  )}
                 </div>
                 {message.role === "user" && (
                   <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
