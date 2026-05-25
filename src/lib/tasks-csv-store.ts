@@ -64,6 +64,30 @@ export function taskDateToDateKey(value: string): string {
   return Number.isNaN(date.getTime()) ? todayDateKey() : formatDateKey(date);
 }
 
+export function isTaskPastDue(task: Pick<Task, "dueDate">, today = todayDateKey()): boolean {
+  return taskDateToDateKey(task.dueDate) < today;
+}
+
+export function applyOverdueStatus(task: Task, today = todayDateKey(), changedAt?: string): Task {
+  if (!isTaskPastDue(task, today) || task.status === "Completed" || task.status === "Overdue") {
+    return task;
+  }
+
+  return {
+    ...task,
+    status: "Overdue",
+    updatedAt: changedAt ?? task.updatedAt,
+  };
+}
+
+export function applyOverdueStatuses(
+  tasks: Task[],
+  today = todayDateKey(),
+  changedAt?: string,
+): Task[] {
+  return tasks.map((task) => applyOverdueStatus(task, today, changedAt));
+}
+
 function escape(v: string): string {
   if (v.includes(",") || v.includes('"') || v.includes("\n")) {
     return `"${v.replace(/"/g, '""')}"`;
@@ -112,7 +136,7 @@ export function parseCsv(csv: string, fallbackBoardDate = todayDateKey()): Task[
     const dueDate = row.dueDate || dateKeyToTaskDate(row.boardDate || fallbackBoardDate);
     const boardDate = row.boardDate || fallbackBoardDate || taskDateToDateKey(dueDate);
 
-    return {
+    return applyOverdueStatus({
       id: row.id,
       title: row.title,
       description: row.description || undefined,
@@ -128,7 +152,7 @@ export function parseCsv(csv: string, fallbackBoardDate = todayDateKey()): Task[
       createdAt: row.createdAt || now,
       updatedAt: row.updatedAt || now,
       createdBy: row.createdBy,
-    };
+    });
   });
 }
 
@@ -145,11 +169,11 @@ export function serializeCsv(tasks: Task[], fallbackBoardDate = todayDateKey()):
 }
 
 export async function loadTasks(boardDate = todayDateKey()): Promise<Task[]> {
-  return tasksService.byBoardDate(boardDate);
+  return applyOverdueStatuses(await tasksService.byBoardDate(boardDate));
 }
 
 async function loadStoredBoardsBefore(boardDate: string) {
-  const tasks = await tasksService.beforeBoardDate(boardDate);
+  const tasks = applyOverdueStatuses(await tasksService.beforeBoardDate(boardDate));
   return groupTasksByBoardDate(tasks);
 }
 
@@ -244,7 +268,7 @@ export async function loadTaskBoard(boardDate = todayDateKey()): Promise<TaskBoa
 }
 
 export async function loadAllTasks(): Promise<Task[]> {
-  const boards = groupTasksByBoardDate(await tasksService.list());
+  const boards = groupTasksByBoardDate(applyOverdueStatuses(await tasksService.list()));
   const sourceTasks = buildSourceTaskMap(boards);
 
   return boards.flatMap(({ boardDate, tasks }) =>
@@ -253,7 +277,11 @@ export async function loadAllTasks(): Promise<Task[]> {
 }
 
 export async function saveTasks(boardDate: string, tasks: Task[]): Promise<void> {
-  await tasksService.upsertMany(tasks.map((task) => ({ ...task, boardDate })));
+  const today = todayDateKey();
+  const changedAt = new Date().toISOString();
+  await tasksService.upsertMany(
+    applyOverdueStatuses(tasks, today, changedAt).map((task) => ({ ...task, boardDate })),
+  );
 }
 
 export function downloadCsv(tasks: Task[], boardDate = todayDateKey()): void {

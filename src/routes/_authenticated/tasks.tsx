@@ -35,6 +35,7 @@ import { usersService } from "@/services";
 import type { Priority, Task, TaskStatus } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import {
+  applyOverdueStatuses,
   dateKeyToTaskDate,
   downloadCsv,
   formatDateKey,
@@ -154,10 +155,11 @@ function TasksPage() {
   const applyBoardTasks = async (boardDate: string, nextBoardTasks: Task[]) => {
     setSaving(true);
     setError(null);
+    const normalizedBoardTasks = applyOverdueStatuses(nextBoardTasks);
 
     try {
-      await saveTasks(boardDate, nextBoardTasks);
-      setBoardTasks(nextBoardTasks);
+      await saveTasks(boardDate, normalizedBoardTasks);
+      setBoardTasks(normalizedBoardTasks);
 
       const loadedBoard = await loadTaskBoard(boardDate);
       if (selectedDateRef.current !== boardDate) return;
