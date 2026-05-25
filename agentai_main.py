@@ -6,13 +6,13 @@ import os
 import sys
 from dataclasses import dataclass
 from datetime import date
-from typing import Any, TypedDict
+from typing import Any, Literal, TypedDict
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.tracers.langchain import wait_for_all_tracers
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, START, StateGraph
@@ -88,8 +88,14 @@ TABLES: dict[str, dict[str, str]] = {
 }
 
 
+class ChatHistoryItem(TypedDict):
+    role: Literal["user", "assistant"]
+    text: str
+
+
 class AgentState(TypedDict, total=False):
     question: str
+    history: list[ChatHistoryItem]
     limit: int
     database: dict[str, list[dict[str, Any]]]
     answer: str
@@ -297,6 +303,27 @@ def content_to_text(content: Any) -> str:
     return json.dumps(content, ensure_ascii=False)
 
 
+def normalize_history(history: Any) -> list[ChatHistoryItem]:
+    if not isinstance(history, list):
+        return []
+
+    normalized: list[ChatHistoryItem] = []
+    for item in history:
+        if not isinstance(item, dict):
+            continue
+
+        role = item.get("role")
+        text = item.get("text")
+        if role not in ("user", "assistant") or not isinstance(text, str):
+            continue
+
+        text = text.strip()
+        if text:
+            normalized.append({"role": role, "text": text})
+
+    return normalized
+
+
 def answer_from_database(state: AgentState) -> AgentState:
     """LangGraph node that asks Gemini to answer from the database snapshot.
 
@@ -307,6 +334,7 @@ def answer_from_database(state: AgentState) -> AgentState:
     load_dotenv()
 
     question = state["question"]
+    history = normalize_history(state.get("history", []))
     database = state["database"]
     model_name = os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
 
@@ -323,18 +351,29 @@ def answer_from_database(state: AgentState) -> AgentState:
                 "using only the provided read-only database snapshot. The tables "
                 "are cases, claims, and tasks. Cite record IDs when useful. If "
                 "the snapshot does not contain enough data, say what is missing "
-                "instead of guessing. Today's date is "
+                "instead of guessing. Use the conversation history only to "
+                "understand references and follow-up questions; do not treat it "
+                "as database truth. Today's date is "
                 f"{date.today().isoformat()}."
             )
         ),
+    ]
+
+    for item in history:
+        if item["role"] == "user":
+            messages.append(HumanMessage(content=item["text"]))
+        else:
+            messages.append(AIMessage(content=item["text"]))
+
+    messages.append(
         HumanMessage(
             content=(
                 f"Question: {question}\n\n"
                 "Database snapshot:\n"
                 f"```json\n{database_json}\n```"
             )
-        ),
-    ]
+        )
+    )
 
     response = model.invoke(messages)
     return {"answer": content_to_text(response.content)}
@@ -354,10 +393,12 @@ def build_agent():
 agent = build_agent()
 
 
-def ask_agent(question: str, *, limit: int = 25) -> str:
-    """Run the compiled agent for a single question and return its answer."""
+def ask_agent(
+    question: str, *, history: list[ChatHistoryItem] | None = None, limit: int = 25
+) -> str:
+    """Run the compiled agent for a question and return its answer."""
     result = agent.invoke(
-        {"question": question, "limit": limit},
+        {"question": question, "history": history or [], "limit": limit},
         config={
             "run_name": "agency_hub_agent",
             "tags": ["agency-hub", "gemini"],
@@ -384,15 +425,33 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     question = " ".join(args.question).strip()
-    if not question:
-        question = input("Ask about cases, claims, or tasks: ").strip()
-
-    if not question:
-        print("No question provided.", file=sys.stderr)
-        return 2
 
     try:
-        print(ask_agent(question, limit=args.limit))
+        if question:
+            print(ask_agent(question, limit=args.limit))
+            return 0
+
+        history: list[ChatHistoryItem] = []
+        print("Agency Hub assistant chat. Type exit or quit to end.")
+        while True:
+            try:
+                question = input("You: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print()
+                return 0
+
+            if not question or question.lower() in {"exit", "quit"}:
+                return 0
+
+            answer = ask_agent(question, history=history, limit=args.limit)
+            print(f"Assistant: {answer}")
+            history.extend(
+                [
+                    {"role": "user", "text": question},
+                    {"role": "assistant", "text": answer},
+                ]
+            )
+
     except Exception as exc:
         print(f"Agent error: {exc}", file=sys.stderr)
         return 1

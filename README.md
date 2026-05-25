@@ -28,6 +28,12 @@ Optional model override:
 GEMINI_MODEL=gemini-2.5-flash
 ```
 
+Optional local LangGraph API URL used by the web assistant:
+
+```bash
+LANGGRAPH_API_URL=http://127.0.0.1:2024
+```
+
 Optional LangSmith tracing variables:
 
 ```bash
@@ -46,7 +52,7 @@ npm ci
 
 ## Develop
 
-Start the local development server:
+Start the local development server. This automatically starts the local LangGraph assistant API if it is not already running:
 
 ```bash
 npm run dev
@@ -76,7 +82,7 @@ Ask Gemini about the `cases`, `claims`, and `tasks` tables:
 
 The agent reads Supabase through the REST API. For local server-side use, set `SUPABASE_SERVICE_ROLE_KEY` in `.env`. To test with RLS as a signed-in user, set `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_ACCESS_TOKEN` instead.
 
-Start the LangGraph development server:
+To start only the LangGraph development server:
 
 ```bash
 $env:PYTHONIOENCODING = "utf-8"
@@ -151,6 +157,8 @@ Then open `http://127.0.0.1:5173/login`. The page should show the Agency Ops log
 ## Scripts
 
 - `npm run dev` starts the local Vite development server.
+- `npm run dev:web` starts only the Vite development server.
+- `npm run dev:agent` starts only the LangGraph development server.
 - `npm run build` builds the client and server bundles.
 - `npm run build:dev` builds with Vite development mode.
 - `npm run preview` previews a built app.

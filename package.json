@@ -4,7 +4,9 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
+    "dev": "node scripts/dev-with-agent.mjs",
+    "dev:web": "vite dev",
+    "dev:agent": ".\\.venv\\Scripts\\langgraph.exe dev --no-browser --allow-blocking",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
