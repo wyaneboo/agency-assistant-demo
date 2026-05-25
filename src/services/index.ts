@@ -191,6 +191,12 @@ export const casesService = {
     if (error) fail("Unable to create case", error);
     return mapCase(data);
   },
+
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase.from("cases").delete().eq("id", id);
+
+    if (error) fail(`Unable to delete case ${id}`, error);
+  },
 };
 
 export const tasksService = {
@@ -290,6 +296,12 @@ export const tasksService = {
     if (error) fail("Unable to save tasks", error);
     return (data ?? []).map(mapTask);
   },
+
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase.from("tasks").delete().eq("id", id);
+
+    if (error) fail(`Unable to delete task ${id}`, error);
+  },
 };
 
 export const claimsService = {
@@ -319,6 +331,12 @@ export const claimsService = {
 
     if (error) fail("Unable to create claim", error);
     return mapClaim(data);
+  },
+
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase.from("claims").delete().eq("id", id);
+
+    if (error) fail(`Unable to delete claim ${id}`, error);
   },
 };
 

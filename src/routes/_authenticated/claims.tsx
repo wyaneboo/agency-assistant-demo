@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Card } from "@/components/ui/card";
@@ -22,7 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { claimsService, usersService } from "@/services";
 import type { Claim, ClaimStatus } from "@/types/domain";
 
@@ -86,6 +87,8 @@ function ClaimsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [claimToDelete, setClaimToDelete] = useState<Claim | null>(null);
+  const [deletingClaimId, setDeletingClaimId] = useState<string | null>(null);
   const [draft, setDraft] = useState<NewClaimDraft>(() => createDraft(defaultAdminId));
 
   const canSubmit = Boolean(
@@ -152,6 +155,23 @@ function ClaimsPage() {
     }
   };
 
+  const deleteClaim = async () => {
+    if (!claimToDelete) return;
+
+    setDeletingClaimId(claimToDelete.id);
+    setError(null);
+
+    try {
+      await claimsService.delete(claimToDelete.id);
+      setClaims((current) => current.filter((claim) => claim.id !== claimToDelete.id));
+      setClaimToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete claim.");
+    } finally {
+      setDeletingClaimId(null);
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -181,12 +201,13 @@ function ClaimsPage() {
                 <th className="px-4 py-3">Submitted</th>
                 <th className="px-4 py-3">Missing Docs</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     Loading claims...
                   </td>
                 </tr>
@@ -209,11 +230,24 @@ function ClaimsPage() {
                     <td className="px-4 py-3">
                       <StatusBadge value={c.status} />
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        disabled={deletingClaimId === c.id}
+                        aria-label={`Delete claim ${c.id}`}
+                        onClick={() => setClaimToDelete(c)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               {!loading && claims.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     No claims have been added yet.
                   </td>
                 </tr>
@@ -353,6 +387,22 @@ function ClaimsPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <DeleteConfirmationDialog
+        open={Boolean(claimToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setClaimToDelete(null);
+        }}
+        title="Delete claim?"
+        description={
+          claimToDelete
+            ? `This will permanently delete claim ${claimToDelete.id} for ${claimToDelete.clientName}.`
+            : "This claim will be permanently deleted."
+        }
+        confirmLabel="Delete claim"
+        deleting={Boolean(deletingClaimId)}
+        onConfirm={deleteClaim}
+      />
     </div>
   );
 }

@@ -1,9 +1,11 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft, FileText, Trash2 } from "lucide-react";
 import { casesService, usersService, activityService, tasksService } from "@/services";
 
 export const Route = createFileRoute("/_authenticated/cases/$caseId")({
@@ -27,8 +29,26 @@ export const Route = createFileRoute("/_authenticated/cases/$caseId")({
 
 function CaseDetail() {
   const { case: c, relatedTasks } = Route.useLoaderData();
+  const navigate = useNavigate();
   const agent = usersService.get(c.agentId);
   const activity = activityService.forEntity("case", c.id);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const deleteCase = async () => {
+    setDeleting(true);
+    setError(null);
+
+    try {
+      await casesService.delete(c.id);
+      navigate({ to: "/cases" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete case.");
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div>
@@ -44,10 +64,24 @@ function CaseDetail() {
         actions={
           <>
             <Button variant="outline">Edit</Button>
+            <Button
+              variant="destructive"
+              disabled={deleting}
+              onClick={() => setDeleteDialogOpen(true)}
+            >
+              <Trash2 className="mr-1.5 h-4 w-4" />
+              Delete
+            </Button>
             <Button>Add Note</Button>
           </>
         }
       />
+
+      {error && (
+        <p className="mb-4 rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {error}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -126,6 +160,16 @@ function CaseDetail() {
           )}
         </CardContent>
       </Card>
+
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete case?"
+        description={`This will permanently delete case ${c.id} for ${c.clientName}.`}
+        confirmLabel="Delete case"
+        deleting={deleting}
+        onConfirm={deleteCase}
+      />
     </div>
   );
 }

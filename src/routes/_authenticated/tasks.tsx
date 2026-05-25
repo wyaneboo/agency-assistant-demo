@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -30,8 +31,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Download, Plus } from "lucide-react";
-import { usersService } from "@/services";
+import {
+  CalendarDays,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { tasksService, usersService } from "@/services";
 import type { Priority, Task, TaskStatus } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import {
@@ -115,6 +124,8 @@ function TasksPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null);
   const [draft, setDraft] = useState<NewTaskDraft>(() =>
     createDraft(todayDateKey(), defaultAssignedTo),
   );
@@ -227,6 +238,35 @@ function TasksPage() {
     if (saved) setDialogOpen(false);
   };
 
+  const deleteTask = async () => {
+    if (!taskToDelete) return;
+
+    const boardDate = selectedDate;
+    const storedTaskId =
+      isCarryTask(taskToDelete) && taskToDelete.carrySourceId
+        ? taskToDelete.carrySourceId
+        : taskToDelete.id;
+
+    setSaving(true);
+    setDeletingTaskId(taskToDelete.id);
+    setError(null);
+
+    try {
+      await tasksService.delete(storedTaskId);
+      const loadedBoard = await loadTaskBoard(boardDate);
+      if (selectedDateRef.current === boardDate) {
+        setBoardTasks(loadedBoard.boardTasks);
+        setVisibleTasks(loadedBoard.visibleTasks);
+      }
+      setTaskToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete task.");
+    } finally {
+      setDeletingTaskId(null);
+      setSaving(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -330,7 +370,22 @@ function TasksPage() {
                               column === "Overdue" && "border-destructive/40",
                             )}
                           >
-                            <p className="text-sm font-medium text-foreground">{task.title}</p>
+                            <div className="flex items-start gap-2">
+                              <p className="min-w-0 flex-1 text-sm font-medium text-foreground">
+                                {task.title}
+                              </p>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="-mr-1 -mt-1 h-7 w-7 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                                disabled={saving || deletingTaskId === task.id}
+                                aria-label={`Delete ${task.title}`}
+                                onClick={() => setTaskToDelete(task)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
                             <p className="mt-1 text-xs text-muted-foreground">
                               {usersService.get(task.assignedTo)?.name}
                             </p>
@@ -395,6 +450,7 @@ function TasksPage() {
                       <th className="px-4 py-3">Due</th>
                       <th className="px-4 py-3">Priority</th>
                       <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3 text-right">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -437,13 +493,26 @@ function TasksPage() {
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </td>
+                          <td className="px-4 py-3 text-right">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              disabled={saving || deletingTaskId === task.id}
+                              aria-label={`Delete ${task.title}`}
+                              onClick={() => setTaskToDelete(task)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
                         </tr>
                       );
                     })}
                     {visibleTasks.length === 0 && (
                       <tr>
                         <td
-                          colSpan={5}
+                          colSpan={6}
                           className="px-4 py-10 text-center text-sm text-muted-foreground"
                         >
                           No tasks for this date.
@@ -571,6 +640,22 @@ function TasksPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <DeleteConfirmationDialog
+        open={Boolean(taskToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setTaskToDelete(null);
+        }}
+        title="Delete task?"
+        description={
+          taskToDelete
+            ? `This will permanently delete "${taskToDelete.title}" from the task board.`
+            : "This task will be permanently deleted."
+        }
+        confirmLabel="Delete task"
+        deleting={Boolean(deletingTaskId)}
+        onConfirm={deleteTask}
+      />
     </div>
   );
 }

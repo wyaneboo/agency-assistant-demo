@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { PageHeader } from "@/components/page-header";
 import { StatusBadge } from "@/components/status-badge";
 import { Button } from "@/components/ui/button";
@@ -22,9 +23,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { casesService, usersService } from "@/services";
-import type { CaseStatus, Priority } from "@/types/domain";
+import type { Case, CaseStatus, Priority } from "@/types/domain";
 
 const CASE_STATUSES: CaseStatus[] = [
   "Draft",
@@ -92,6 +93,8 @@ function CasesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
+  const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
   const [draft, setDraft] = useState<NewCaseDraft>(() => createDraft(defaultAgentId));
 
   const premium = Number(draft.premium);
@@ -181,6 +184,23 @@ function CasesPage() {
     }
   };
 
+  const deleteCase = async () => {
+    if (!caseToDelete) return;
+
+    setDeletingCaseId(caseToDelete.id);
+    setError(null);
+
+    try {
+      await casesService.delete(caseToDelete.id);
+      setAllCases((current) => current.filter((c) => c.id !== caseToDelete.id));
+      setCaseToDelete(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to delete case.");
+    } finally {
+      setDeletingCaseId(null);
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -236,12 +256,13 @@ function CasesPage() {
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3">Priority</th>
                 <th className="px-4 py-3">Follow-up</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {loading && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     Loading cases...
                   </td>
                 </tr>
@@ -273,11 +294,24 @@ function CasesPage() {
                     <td className="px-4 py-3 text-muted-foreground">
                       {c.followUpDate ? new Date(c.followUpDate).toLocaleDateString("en-US") : "-"}
                     </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        disabled={deletingCaseId === c.id}
+                        aria-label={`Delete case ${c.id}`}
+                        onClick={() => setCaseToDelete(c)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               {!loading && filtered.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={9} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     No cases match the current filters.
                   </td>
                 </tr>
@@ -483,6 +517,22 @@ function CasesPage() {
           </form>
         </DialogContent>
       </Dialog>
+
+      <DeleteConfirmationDialog
+        open={Boolean(caseToDelete)}
+        onOpenChange={(open) => {
+          if (!open) setCaseToDelete(null);
+        }}
+        title="Delete case?"
+        description={
+          caseToDelete
+            ? `This will permanently delete case ${caseToDelete.id} for ${caseToDelete.clientName}.`
+            : "This case will be permanently deleted."
+        }
+        confirmLabel="Delete case"
+        deleting={Boolean(deletingCaseId)}
+        onConfirm={deleteCase}
+      />
     </div>
   );
 }

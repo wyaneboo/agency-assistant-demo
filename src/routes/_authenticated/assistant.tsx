@@ -190,7 +190,7 @@ function AssistantPage() {
     <div>
       <PageHeader
         title="AI Assistant"
-        description="Ask the LangGraph agent about your agency operations."
+        description="Ask the AI assistant about your agency operations."
       />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="flex h-[600px] flex-col lg:col-span-2">
