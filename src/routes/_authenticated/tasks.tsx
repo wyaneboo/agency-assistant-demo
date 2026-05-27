@@ -41,7 +41,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { tasksService, usersService } from "@/services";
-import type { Priority, Task, TaskStatus } from "@/types/domain";
+import type { Priority, Task, TaskStatus, User } from "@/types/domain";
 import { cn } from "@/lib/utils";
 import {
   applyOverdueStatuses,
@@ -113,7 +113,7 @@ export const Route = createFileRoute("/_authenticated/tasks")({
 });
 
 function TasksPage() {
-  const assignableUsers = usersService.list();
+  const [assignableUsers, setAssignableUsers] = useState<User[]>(usersService.list());
   const defaultAssignedTo = assignableUsers[0]?.id ?? "";
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [selectedDate, setSelectedDate] = useState(() => todayDateKey());
@@ -134,10 +134,27 @@ function TasksPage() {
   const todayKey = todayDateKey();
   const completedCount = visibleTasks.filter((t) => t.status === "Completed").length;
   const openCount = visibleTasks.length - completedCount;
+  const userName = (id: string) => assignableUsers.find((user) => user.id === id)?.name ?? id;
 
   useEffect(() => {
     selectedDateRef.current = selectedDate;
   }, [selectedDate]);
+
+  useEffect(() => {
+    let cancelled = false;
+    usersService
+      .load()
+      .then((loadedUsers) => {
+        if (!cancelled) setAssignableUsers(loadedUsers);
+      })
+      .catch((err) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load users.");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -387,7 +404,7 @@ function TasksPage() {
                               </Button>
                             </div>
                             <p className="mt-1 text-xs text-muted-foreground">
-                              {usersService.get(task.assignedTo)?.name}
+                              {userName(task.assignedTo)}
                             </p>
                             {taskCarryLabel && (
                               <p className="mt-1 text-[11px] text-muted-foreground">
@@ -465,7 +482,7 @@ function TasksPage() {
                             )}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
-                            {usersService.get(task.assignedTo)?.name}
+                            {userName(task.assignedTo)}
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">
                             {new Date(task.dueDate).toLocaleDateString("en-US")}

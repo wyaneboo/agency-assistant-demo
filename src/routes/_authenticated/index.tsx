@@ -17,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { casesService, claimsService, activityService, usersService } from "@/services";
 import { loadAllTasks } from "@/lib/tasks-csv-store";
-import type { Case, Claim, Task } from "@/types/domain";
+import type { Case, Claim, Task, User } from "@/types/domain";
 
 export const Route = createFileRoute("/_authenticated/")({
   component: Index,
@@ -27,9 +27,10 @@ function Index() {
   const [dashboardCases, setDashboardCases] = useState<Case[]>([]);
   const [dashboardClaims, setDashboardClaims] = useState<Claim[]>([]);
   const [dashboardTasks, setDashboardTasks] = useState<Task[]>([]);
+  const [dashboardUsers, setDashboardUsers] = useState<User[]>(usersService.list());
   const [dataLoading, setDataLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
-  const userById = (id: string) => usersService.get(id)?.name ?? id;
+  const userById = (id: string) => dashboardUsers.find((user) => user.id === id)?.name ?? id;
   const openClaims = useMemo(
     () =>
       dashboardClaims.filter((c) => !["Closed", "Rejected", "Approved"].includes(c.status)).length,
@@ -68,16 +69,18 @@ function Index() {
   );
   const agentActivity = useMemo(
     () =>
-      usersService.agents().map((a) => {
-        const agentCases = dashboardCases.filter((c) => c.agentId === a.id);
-        return {
-          agent: a,
-          cases: agentCases.length,
-          open: agentCases.filter((c) => !["Closed", "Rejected", "Issued"].includes(c.status))
-            .length,
-        };
-      }),
-    [dashboardCases],
+      dashboardUsers
+        .filter((user) => user.role === "Agent")
+        .map((a) => {
+          const agentCases = dashboardCases.filter((c) => c.agentId === a.id);
+          return {
+            agent: a,
+            cases: agentCases.length,
+            open: agentCases.filter((c) => !["Closed", "Rejected", "Issued"].includes(c.status))
+              .length,
+          };
+        }),
+    [dashboardCases, dashboardUsers],
   );
 
   useEffect(() => {
@@ -85,12 +88,13 @@ function Index() {
     setDataLoading(true);
     setDataError(null);
 
-    Promise.all([casesService.list(), loadAllTasks(), claimsService.list()])
-      .then(([loadedCases, loadedTasks, loadedClaims]) => {
+    Promise.all([casesService.list(), loadAllTasks(), claimsService.list(), usersService.load()])
+      .then(([loadedCases, loadedTasks, loadedClaims, loadedUsers]) => {
         if (cancelled) return;
         setDashboardCases(loadedCases);
         setDashboardTasks(loadedTasks);
         setDashboardClaims(loadedClaims);
+        setDashboardUsers(loadedUsers);
       })
       .catch((err) => {
         if (!cancelled) {

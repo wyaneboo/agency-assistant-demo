@@ -21,16 +21,20 @@ export const Route = createFileRoute("/_authenticated/cases/$caseId")({
   loader: async ({ params }) => {
     const c = casesService.get(params.caseId);
     const relatedTasks = tasksService.byCase(params.caseId);
-    const [loadedCase, loadedTasks] = await Promise.all([c, relatedTasks]);
+    const users = usersService.load();
+    const [loadedCase, loadedTasks, loadedUsers] = await Promise.all([c, relatedTasks, users]);
     if (!loadedCase) throw notFound();
-    return { case: loadedCase, relatedTasks: loadedTasks };
+    return {
+      case: loadedCase,
+      relatedTasks: loadedTasks,
+      agent: loadedUsers.find((user) => user.id === loadedCase.agentId),
+    };
   },
 });
 
 function CaseDetail() {
-  const { case: c, relatedTasks } = Route.useLoaderData();
+  const { case: c, relatedTasks, agent } = Route.useLoaderData();
   const navigate = useNavigate();
-  const agent = usersService.get(c.agentId);
   const activity = activityService.forEntity("case", c.id);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);

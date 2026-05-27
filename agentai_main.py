@@ -24,6 +24,21 @@ os.environ.setdefault("LANGCHAIN_CALLBACKS_BACKGROUND", "false")
 DEFAULT_MODEL = "gemma-4-31b-it"
 
 TABLES: dict[str, dict[str, str]] = {
+    "users": {
+        "select": ",".join(
+            [
+                "id",
+                "name",
+                "email",
+                "role",
+                "phone",
+                "avatar_url",
+                "created_at",
+                "updated_at",
+            ]
+        ),
+        "order": "name.asc",
+    },
     "cases": {
         "select": ",".join(
             [
@@ -270,7 +285,10 @@ class SupabaseRestReader:
         return headers
 
     def fetch_database_snapshot(self, *, limit: int) -> dict[str, list[dict[str, Any]]]:
-        return {table: self.fetch_table(table, limit=limit) for table in TABLES}
+        return {
+            table: self.fetch_table(table, limit=100 if table == "users" else limit)
+            for table in TABLES
+        }
 
 
 def load_database_context(state: AgentState) -> AgentState:
@@ -336,7 +354,7 @@ def answer_from_database(state: AgentState) -> AgentState:
     question = state["question"]
     history = normalize_history(state.get("history", []))
     database = state["database"]
-    model_name = os.getenv("GEMINI_MODEL", DEFAULT_MODEL)
+    model_name = os.getenv("GEMINI_MODEL") or DEFAULT_MODEL
 
     model = ChatGoogleGenerativeAI(
         model=model_name,
@@ -349,7 +367,9 @@ def answer_from_database(state: AgentState) -> AgentState:
             content=(
                 "You are the Agency Hub operations assistant. Answer questions "
                 "using only the provided read-only database snapshot. The tables "
-                "are cases, claims, and tasks. Cite record IDs when useful. If "
+                "are users, cases, claims, and tasks. Use users to resolve "
+                "agent, admin, creator, and assignee IDs to names. Cite record "
+                "IDs when useful. If "
                 "the snapshot does not contain enough data, say what is missing "
                 "instead of guessing. Use the conversation history only to "
                 "understand references and follow-up questions; do not treat it "

@@ -25,7 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { casesService, usersService } from "@/services";
-import type { Case, CaseStatus, Priority } from "@/types/domain";
+import type { Case, CaseStatus, Priority, User } from "@/types/domain";
 
 const CASE_STATUSES: CaseStatus[] = [
   "Draft",
@@ -84,7 +84,7 @@ export const Route = createFileRoute("/_authenticated/cases")({
 });
 
 function CasesPage() {
-  const agents = usersService.agents();
+  const [agents, setAgents] = useState<User[]>(usersService.agents());
   const defaultAgentId = agents[0]?.id ?? "";
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("All");
@@ -96,6 +96,7 @@ function CasesPage() {
   const [caseToDelete, setCaseToDelete] = useState<Case | null>(null);
   const [deletingCaseId, setDeletingCaseId] = useState<string | null>(null);
   const [draft, setDraft] = useState<NewCaseDraft>(() => createDraft(defaultAgentId));
+  const userName = (id: string) => agents.find((agent) => agent.id === id)?.name ?? id;
 
   const premium = Number(draft.premium);
   const anpEstimate = draft.anpEstimate.trim() ? Number(draft.anpEstimate) : premium;
@@ -125,10 +126,11 @@ function CasesPage() {
     setLoading(true);
     setError(null);
 
-    casesService
-      .list()
-      .then((loadedCases) => {
-        if (!cancelled) setAllCases(loadedCases);
+    Promise.all([casesService.list(), usersService.load()])
+      .then(([loadedCases, loadedUsers]) => {
+        if (cancelled) return;
+        setAllCases(loadedCases);
+        setAgents(loadedUsers.filter((user) => user.role === "Agent"));
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load cases.");
@@ -281,7 +283,7 @@ function CasesPage() {
                     </td>
                     <td className="px-4 py-3">{c.clientName}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {usersService.get(c.agentId)?.name}
+                      {userName(c.agentId)}
                     </td>
                     <td className="px-4 py-3">{c.productType}</td>
                     <td className="px-4 py-3 text-right">${c.premium.toLocaleString()}</td>

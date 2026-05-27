@@ -10,10 +10,11 @@ import {
 } from "./mock-data";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables, TablesInsert } from "@/integrations/supabase/types";
-import type { Case, Claim, Task } from "@/types/domain";
+import type { Case, Claim, Task, User } from "@/types/domain";
 
 type CreateCaseInput = Omit<Case, "id" | "createdAt" | "updatedAt">;
 type CreateClaimInput = Omit<Claim, "id" | "createdAt" | "updatedAt">;
+type CreateUserInput = Omit<User, "avatarUrl"> & { avatarUrl?: string };
 type CreateTaskInput = Omit<Task, "id" | "createdAt" | "updatedAt"> & {
   id?: string;
   createdAt?: string;
@@ -23,9 +24,13 @@ type CreateTaskInput = Omit<Task, "id" | "createdAt" | "updatedAt"> & {
 type CaseRow = Tables<"cases">;
 type ClaimRow = Tables<"claims">;
 type TaskRow = Tables<"tasks">;
+type UserRow = Tables<"users">;
 type CaseInsert = TablesInsert<"cases">;
 type ClaimInsert = TablesInsert<"claims">;
 type TaskInsert = TablesInsert<"tasks">;
+type UserInsert = TablesInsert<"users">;
+
+let usersCache: User[] = [..._users];
 
 function toDateKey(value: string | undefined | null): string {
   if (!value) return "";
@@ -132,6 +137,28 @@ function mapTask(row: TaskRow): Task {
   };
 }
 
+function mapUser(row: UserRow): User {
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    role: row.role as User["role"],
+    phone: row.phone ?? undefined,
+    avatarUrl: row.avatar_url ?? undefined,
+  };
+}
+
+function userToInsert(input: CreateUserInput): UserInsert {
+  return {
+    id: input.id,
+    name: input.name.trim(),
+    email: input.email.trim().toLowerCase(),
+    role: input.role,
+    phone: input.phone?.trim() || null,
+    avatar_url: input.avatarUrl?.trim() || null,
+  };
+}
+
 function taskToInsert(task: CreateTaskInput | Task): TaskInsert {
   return {
     id: task.id,
@@ -150,6 +177,19 @@ function taskToInsert(task: CreateTaskInput | Task): TaskInsert {
     updated_at: task.updatedAt,
     created_by: task.createdBy,
   };
+}
+
+function nextUserId(users: User[]): string {
+  const maxNumericId = users.reduce((max, user) => {
+    const match = /^u(\d+)$/.exec(user.id);
+    return match ? Math.max(max, Number(match[1])) : max;
+  }, 0);
+
+  return `u${maxNumericId + 1}`;
+}
+
+function sortUsers(users: User[]): User[] {
+  return [...users].sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export const casesService = {
@@ -341,9 +381,34 @@ export const claimsService = {
 };
 
 export const usersService = {
-  list: () => _users,
-  get: (id: string) => _users.find((u) => u.id === id),
-  agents: () => _users.filter((u) => u.role === "Agent"),
+  list: () => usersCache,
+  get: (id: string) => usersCache.find((u) => u.id === id),
+  agents: () => usersCache.filter((u) => u.role === "Agent"),
+  load: async (): Promise<User[]> => {
+    const { data, error } = await supabase.from("users").select("*").order("name");
+
+    if (error) fail("Unable to load users", error);
+    usersCache = sortUsers((data ?? []).map(mapUser));
+    return usersCache;
+  },
+  create: async (input: Omit<CreateUserInput, "id"> & { id?: string }): Promise<User> => {
+    const insert = userToInsert({
+      ...input,
+      id: input.id?.trim() || nextUserId(usersCache),
+    });
+    const { data, error } = await supabase.from("users").insert(insert).select().single();
+
+    if (error) fail("Unable to create user", error);
+    const created = mapUser(data);
+    usersCache = sortUsers([created, ...usersCache.filter((user) => user.id !== created.id)]);
+    return created;
+  },
+  delete: async (id: string): Promise<void> => {
+    const { error } = await supabase.from("users").delete().eq("id", id);
+
+    if (error) fail(`Unable to delete user ${id}`, error);
+    usersCache = usersCache.filter((user) => user.id !== id);
+  },
 };
 
 export const activityService = {

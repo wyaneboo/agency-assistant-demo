@@ -25,7 +25,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Plus, Trash2 } from "lucide-react";
 import { claimsService, usersService } from "@/services";
-import type { Claim, ClaimStatus } from "@/types/domain";
+import type { Claim, ClaimStatus, User } from "@/types/domain";
 
 const CLAIM_STATUSES: ClaimStatus[] = [
   "Reported",
@@ -78,7 +78,7 @@ export const Route = createFileRoute("/_authenticated/claims")({
 });
 
 function ClaimsPage() {
-  const users = usersService.list();
+  const [users, setUsers] = useState<User[]>(usersService.list());
   const adminUsers = users.filter((user) => user.role === "Admin");
   const assignableAdmins = adminUsers.length ? adminUsers : users;
   const defaultAdminId = assignableAdmins[0]?.id ?? "";
@@ -90,6 +90,7 @@ function ClaimsPage() {
   const [claimToDelete, setClaimToDelete] = useState<Claim | null>(null);
   const [deletingClaimId, setDeletingClaimId] = useState<string | null>(null);
   const [draft, setDraft] = useState<NewClaimDraft>(() => createDraft(defaultAdminId));
+  const userName = (id: string) => users.find((user) => user.id === id)?.name ?? id;
 
   const canSubmit = Boolean(
     draft.clientName.trim() &&
@@ -103,10 +104,11 @@ function ClaimsPage() {
     setLoading(true);
     setError(null);
 
-    claimsService
-      .list()
-      .then((loadedClaims) => {
-        if (!cancelled) setClaims(loadedClaims);
+    Promise.all([claimsService.list(), usersService.load()])
+      .then(([loadedClaims, loadedUsers]) => {
+        if (cancelled) return;
+        setClaims(loadedClaims);
+        setUsers(loadedUsers);
       })
       .catch((err) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Unable to load claims.");
@@ -219,7 +221,7 @@ function ClaimsPage() {
                     <td className="px-4 py-3">{c.clientName}</td>
                     <td className="px-4 py-3">{c.claimType}</td>
                     <td className="px-4 py-3 text-muted-foreground">
-                      {usersService.get(c.assignedAdminId)?.name}
+                      {userName(c.assignedAdminId)}
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {new Date(c.submissionDate).toLocaleDateString("en-US")}
