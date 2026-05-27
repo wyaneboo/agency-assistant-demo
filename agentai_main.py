@@ -115,6 +115,112 @@ NULLABLE_TASK_FIELDS = {
     "related_case_id",
     "related_claim_id",
 }
+TABLE_SEARCH_FIELDS: dict[str, tuple[str, ...]] = {
+    "users": ("id", "name", "email", "role", "phone"),
+    "cases": (
+        "id",
+        "client_name",
+        "agent_id",
+        "product_type",
+        "status",
+        "priority",
+        "remarks",
+        "created_by",
+    ),
+    "claims": (
+        "id",
+        "client_name",
+        "claim_type",
+        "assigned_admin_id",
+        "status",
+        "remarks",
+    ),
+    "tasks": (
+        "id",
+        "title",
+        "description",
+        "assigned_to",
+        "priority",
+        "status",
+        "related_case_id",
+        "related_claim_id",
+        "created_by",
+        "carry_source_id",
+    ),
+}
+TABLE_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "users": (
+        "user",
+        "users",
+        "agent",
+        "agents",
+        "admin",
+        "admins",
+        "assignee",
+        "assigned to",
+        "creator",
+        "manager",
+        "email",
+        "phone",
+    ),
+    "cases": (
+        "case",
+        "cases",
+        "policy",
+        "policies",
+        "premium",
+        "underwriting",
+        "payment",
+        "client",
+        "clients",
+        "follow-up",
+        "follow up",
+        "submitted",
+        "issued",
+        "product",
+    ),
+    "claims": (
+        "claim",
+        "claims",
+        "hospitalization",
+        "death",
+        "appeal",
+        "appealed",
+        "insurer",
+        "submission",
+        "documents",
+    ),
+    "tasks": (
+        "task",
+        "tasks",
+        "todo",
+        "to do",
+        "kanban",
+        "board",
+        "due",
+        "overdue",
+        "completed",
+        "waiting",
+        "reschedule",
+        "assign",
+        "move",
+        "mark",
+    ),
+}
+BROAD_CONTEXT_KEYWORDS = (
+    "ops",
+    "operations",
+    "report",
+    "summary",
+    "overview",
+    "dashboard",
+    "bottleneck",
+    "workload",
+    "production",
+    "today",
+    "daily",
+    "week",
+)
 
 
 class ChatHistoryItem(TypedDict):
@@ -126,6 +232,7 @@ class AgentState(TypedDict, total=False):
     question: str
     history: list[ChatHistoryItem]
     limit: int
+    selected_tables: list[str]
     database: dict[str, list[dict[str, Any]]]
     messages: Annotated[list[BaseMessage], add_messages]
     answer: str
@@ -273,6 +380,46 @@ class SupabaseRestClient:
             raise RuntimeError(f"Unexpected Supabase response for {table}: {data}")
         return data
 
+    def get_record(self, table: str, record_id: str) -> dict[str, Any] | None:
+        table_config = TABLES[table]
+        query = urlencode(
+            {
+                "select": table_config["select"],
+                "id": f"eq.{record_id}",
+                "limit": "1",
+            }
+        )
+        data = self._request_json("GET", f"/rest/v1/{table}?{query}")
+        if not isinstance(data, list):
+            raise RuntimeError(f"Unexpected Supabase response for {table}: {data}")
+        if not data:
+            return None
+        row = data[0]
+        if not isinstance(row, dict):
+            raise RuntimeError(f"Unexpected Supabase row for {table}: {row}")
+        return row
+
+    def search_table(
+        self, table: str, *, query_text: str, limit: int
+    ) -> list[dict[str, Any]]:
+        table_config = TABLES[table]
+        search_term = self._search_term(query_text)
+        filters = ",".join(
+            f"{field}.ilike.*{search_term}*" for field in TABLE_SEARCH_FIELDS[table]
+        )
+        query = urlencode(
+            {
+                "select": table_config["select"],
+                "or": f"({filters})",
+                "order": table_config["order"],
+                "limit": str(limit),
+            }
+        )
+        data = self._request_json("GET", f"/rest/v1/{table}?{query}")
+        if not isinstance(data, list):
+            raise RuntimeError(f"Unexpected Supabase response for {table}: {data}")
+        return data
+
     def insert_task(self, payload: dict[str, Any]) -> dict[str, Any]:
         query = urlencode({"select": TABLES["tasks"]["select"]})
         data = self._request_json(
@@ -371,23 +518,92 @@ class SupabaseRestClient:
             raise RuntimeError(f"Unexpected Supabase task row: {row}")
         return row
 
-    def fetch_database_snapshot(self, *, limit: int) -> dict[str, list[dict[str, Any]]]:
+    def fetch_database_snapshot(
+        self, *, tables: list[str], limit: int
+    ) -> dict[str, list[dict[str, Any]]]:
         return {
             table: self.fetch_table(table, limit=100 if table == "users" else limit)
-            for table in TABLES
+            for table in tables
         }
+
+    @staticmethod
+    def _search_term(query_text: str) -> str:
+        if not isinstance(query_text, str) or not query_text.strip():
+            raise ValueError("query is required.")
+
+        # PostgREST OR filters use comma and parenthesis delimiters.
+        term = "".join(
+            character for character in query_text.strip()[:80] if character not in ",()"
+        ).strip()
+        if not term:
+            raise ValueError("query must contain searchable text.")
+        return term
+
+
+def _clamp_limit(value: Any, *, default: int = 25, maximum: int = 100) -> int:
+    try:
+        limit = int(value)
+    except (TypeError, ValueError):
+        limit = default
+    return max(1, min(limit, maximum))
+
+
+def _normalize_selected_tables(tables: Any) -> list[str]:
+    if not isinstance(tables, list):
+        return list(TABLES)
+
+    normalized: list[str] = []
+    for table in tables:
+        if isinstance(table, str) and table in TABLES and table not in normalized:
+            normalized.append(table)
+    return normalized or list(TABLES)
+
+
+def _contains_any(text: str, keywords: tuple[str, ...]) -> bool:
+    return any(keyword in text for keyword in keywords)
+
+
+def select_context_tables(state: AgentState) -> AgentState:
+    """Choose which tables to preload before the main agent runs."""
+    history_text = " ".join(
+        item.get("text", "")
+        for item in state.get("history", [])
+        if isinstance(item, dict)
+    )
+    text = f"{history_text} {state.get('question', '')}".lower()
+    selected = {
+        table
+        for table, keywords in TABLE_KEYWORDS.items()
+        if _contains_any(text, keywords)
+    }
+
+    if _contains_any(text, BROAD_CONTEXT_KEYWORDS):
+        selected.update(TABLES)
+
+    if "overdue" in text and not selected:
+        selected.update({"cases", "tasks"})
+
+    if not selected:
+        selected.update(TABLES)
+
+    return {"selected_tables": [table for table in TABLES if table in selected]}
 
 
 def load_database_context(state: AgentState) -> AgentState:
-    """LangGraph node that loads a read-only Supabase snapshot into state.
+    """LangGraph node that loads selected read-only Supabase tables into state.
 
-    Reads the requested row limit from the incoming state, fetches the
-    configured `cases`, `claims`, and `tasks` tables, and returns only the
-    `database` key so LangGraph can merge it into the graph state.
+    Reads the requested row limit from the incoming state and fetches only
+    the tables chosen by `select_context_tables`.
     """
-    limit = max(1, min(int(state.get("limit", 25)), 100))
+    limit = _clamp_limit(state.get("limit", 25))
+    selected_tables = _normalize_selected_tables(state.get("selected_tables"))
     client = SupabaseRestClient(SupabaseRestConfig.from_env())
-    return {"database": client.fetch_database_snapshot(limit=limit)}
+    return {
+        "database": client.fetch_database_snapshot(
+            tables=selected_tables,
+            limit=limit,
+        )
+    }
 
 
 class TaskDatabaseChangeInput(BaseModel):
@@ -452,6 +668,25 @@ class TaskDatabaseChangeInput(BaseModel):
     )
 
 
+class ListRowsInput(BaseModel):
+    limit: int | None = Field(
+        default=25,
+        description="Maximum rows to return, capped at 100.",
+    )
+
+
+class GetRecordInput(BaseModel):
+    record_id: str = Field(description="Exact row ID to fetch.")
+
+
+class SearchRowsInput(BaseModel):
+    query: str = Field(description="Text to search for in the table.")
+    limit: int | None = Field(
+        default=10,
+        description="Maximum matching rows to return, capped at 50.",
+    )
+
+
 def _tool_json(payload: dict[str, Any]) -> str:
     return json.dumps(payload, ensure_ascii=False, default=str)
 
@@ -483,6 +718,153 @@ def _date_key(value: str | None, field: str, *, required: bool = False) -> str |
         return date.fromisoformat(text).isoformat()
     except ValueError as exc:
         raise ValueError(f"{field} must be a valid YYYY-MM-DD date.") from exc
+
+
+def _list_table_rows(table: str, *, limit: int | None) -> str:
+    try:
+        row_limit = _clamp_limit(limit, default=25, maximum=100)
+        client = SupabaseRestClient(SupabaseRestConfig.from_env())
+        records = client.fetch_table(table, limit=row_limit)
+        return _tool_json(
+            {
+                "ok": True,
+                "table": table,
+                "count": len(records),
+                "limit": row_limit,
+                "records": records,
+            }
+        )
+    except Exception as exc:
+        return _tool_json({"ok": False, "table": table, "error": str(exc)})
+
+
+def _get_table_record(table: str, *, record_id: str) -> str:
+    try:
+        row_id = _required_text(record_id, "record_id")
+        client = SupabaseRestClient(SupabaseRestConfig.from_env())
+        record = client.get_record(table, row_id)
+        if record is None:
+            return _tool_json(
+                {
+                    "ok": False,
+                    "table": table,
+                    "record_id": row_id,
+                    "error": f"No {table} row found for id {row_id}.",
+                }
+            )
+        return _tool_json(
+            {"ok": True, "table": table, "record_id": row_id, "record": record}
+        )
+    except Exception as exc:
+        return _tool_json({"ok": False, "table": table, "error": str(exc)})
+
+
+def _search_table_rows(table: str, *, query: str, limit: int | None) -> str:
+    try:
+        search_query = _required_text(query, "query")
+        row_limit = _clamp_limit(limit, default=10, maximum=50)
+        client = SupabaseRestClient(SupabaseRestConfig.from_env())
+        records = client.search_table(table, query_text=search_query, limit=row_limit)
+        return _tool_json(
+            {
+                "ok": True,
+                "table": table,
+                "query": search_query,
+                "count": len(records),
+                "limit": row_limit,
+                "records": records,
+            }
+        )
+    except Exception as exc:
+        return _tool_json({"ok": False, "table": table, "query": query, "error": str(exc)})
+
+
+@tool("list_users", args_schema=ListRowsInput)
+def list_users(limit: int | None = 25) -> str:
+    """List rows from the users table."""
+    return _list_table_rows("users", limit=limit)
+
+
+@tool("get_user", args_schema=GetRecordInput)
+def get_user(record_id: str) -> str:
+    """Get one user by exact users.id."""
+    return _get_table_record("users", record_id=record_id)
+
+
+@tool("search_users", args_schema=SearchRowsInput)
+def search_users(query: str, limit: int | None = 10) -> str:
+    """Search users by ID, name, email, role, or phone."""
+    return _search_table_rows("users", query=query, limit=limit)
+
+
+@tool("list_cases", args_schema=ListRowsInput)
+def list_cases(limit: int | None = 25) -> str:
+    """List rows from the cases table."""
+    return _list_table_rows("cases", limit=limit)
+
+
+@tool("get_case", args_schema=GetRecordInput)
+def get_case(record_id: str) -> str:
+    """Get one case by exact cases.id."""
+    return _get_table_record("cases", record_id=record_id)
+
+
+@tool("search_cases", args_schema=SearchRowsInput)
+def search_cases(query: str, limit: int | None = 10) -> str:
+    """Search cases by ID, client, agent ID, product, status, priority, or remarks."""
+    return _search_table_rows("cases", query=query, limit=limit)
+
+
+@tool("list_claims", args_schema=ListRowsInput)
+def list_claims(limit: int | None = 25) -> str:
+    """List rows from the claims table."""
+    return _list_table_rows("claims", limit=limit)
+
+
+@tool("get_claim", args_schema=GetRecordInput)
+def get_claim(record_id: str) -> str:
+    """Get one claim by exact claims.id."""
+    return _get_table_record("claims", record_id=record_id)
+
+
+@tool("search_claims", args_schema=SearchRowsInput)
+def search_claims(query: str, limit: int | None = 10) -> str:
+    """Search claims by ID, client, claim type, admin ID, status, or remarks."""
+    return _search_table_rows("claims", query=query, limit=limit)
+
+
+@tool("list_tasks", args_schema=ListRowsInput)
+def list_tasks(limit: int | None = 25) -> str:
+    """List rows from the tasks table."""
+    return _list_table_rows("tasks", limit=limit)
+
+
+@tool("get_task", args_schema=GetRecordInput)
+def get_task(record_id: str) -> str:
+    """Get one task by exact tasks.id."""
+    return _get_table_record("tasks", record_id=record_id)
+
+
+@tool("search_tasks", args_schema=SearchRowsInput)
+def search_tasks(query: str, limit: int | None = 10) -> str:
+    """Search tasks by ID, title, description, assignee ID, priority, status, or related IDs."""
+    return _search_table_rows("tasks", query=query, limit=limit)
+
+
+READ_DATABASE_TOOLS = [
+    list_users,
+    get_user,
+    search_users,
+    list_cases,
+    get_case,
+    search_cases,
+    list_claims,
+    get_claim,
+    search_claims,
+    list_tasks,
+    get_task,
+    search_tasks,
+]
 
 
 def _choice(value: str | None, field: str, allowed: set[str], default: str | None = None) -> str:
@@ -633,6 +1015,7 @@ def change_task_database(
 
 
 TASK_DATABASE_TOOLS = [change_task_database]
+AGENT_TOOLS = READ_DATABASE_TOOLS + TASK_DATABASE_TOOLS
 
 
 def content_to_text(content: Any) -> str:
@@ -679,26 +1062,33 @@ def prepare_agent_messages(state: AgentState) -> AgentState:
     question = state["question"]
     history = normalize_history(state.get("history", []))
     database = state["database"]
+    selected_tables = _normalize_selected_tables(state.get("selected_tables"))
 
     database_json = json.dumps(database, indent=2, default=str)
     messages = [
         SystemMessage(
             content=(
                 "You are the Agency Hub operations assistant. Answer questions "
-                "using the provided database snapshot as the source of truth. "
-                "The tables are users, cases, claims, and tasks. Use users to "
-                "resolve agent, admin, creator, and assignee IDs to names. Cite "
-                "record IDs when useful. You may change the tasks table only by "
-                "calling the change_task_database tool. Use that tool when the "
-                "user clearly asks to create, update, delete, mark, move, assign, "
-                "or reschedule a task. Do not change users, cases, or claims. "
-                "Before calling the tool, resolve task IDs and user IDs from the "
-                "snapshot. If the requested change is ambiguous or missing a "
-                "required field, ask a concise clarification instead of changing "
-                "data. After a tool call, summarize exactly what changed and "
-                "include the affected task ID. Use the conversation history only "
-                "to understand references and follow-up questions; do not treat "
-                "it as database truth. Today's date is "
+                "using Agency Hub database data as the source of truth. The "
+                "tables are users, cases, claims, and tasks. An initial limited "
+                "snapshot is provided only for selected tables. You also have "
+                "read tools for every table: list, get by exact ID, and search. "
+                "Use those read tools when the selected snapshot is missing a "
+                "needed table, when you need an exact row, or when the answer "
+                "depends on rows outside the limited snapshot. Use users to "
+                "resolve agent, admin, creator, and assignee IDs to names when "
+                "names matter. Cite record IDs when useful. You may change the "
+                "tasks table only by calling the change_task_database tool. Use "
+                "that tool when the user clearly asks to create, update, delete, "
+                "mark, move, assign, or reschedule a task. Do not change users, "
+                "cases, or claims. Before calling the write tool, resolve task "
+                "IDs and user IDs from the snapshot or read tools. If the "
+                "requested change is ambiguous or missing a required field, ask "
+                "a concise clarification instead of changing data. After a tool "
+                "call, summarize exactly what changed and include the affected "
+                "task ID. Use the conversation history only to understand "
+                "references and follow-up questions; do not treat it as database "
+                "truth. Today's date is "
                 f"{date.today().isoformat()}."
             )
         ),
@@ -714,7 +1104,9 @@ def prepare_agent_messages(state: AgentState) -> AgentState:
         HumanMessage(
             content=(
                 f"Question: {question}\n\n"
-                "Database snapshot:\n"
+                "Selected initial tables: "
+                f"{', '.join(selected_tables)}\n\n"
+                "Initial database snapshot:\n"
                 f"```json\n{database_json}\n```"
             )
         )
@@ -727,19 +1119,17 @@ def call_agent_model(state: AgentState) -> AgentState:
     load_dotenv()
 
     model_name = os.getenv("GEMINI_MODEL") or DEFAULT_MODEL
-    model = ChatGoogleGenerativeAI(model=model_name, temperature=0).bind_tools(
-        TASK_DATABASE_TOOLS
-    )
+    model = ChatGoogleGenerativeAI(model=model_name, temperature=0).bind_tools(AGENT_TOOLS)
     response = model.invoke(state["messages"])
     return {"messages": [response]}
 
 
-def route_after_agent(state: AgentState) -> Literal["task_database_tools", "finalize_answer"]:
+def route_after_agent(state: AgentState) -> Literal["database_tools", "finalize_answer"]:
     messages = state.get("messages", [])
     if messages:
         last_message = messages[-1]
         if isinstance(last_message, AIMessage) and last_message.tool_calls:
-            return "task_database_tools"
+            return "database_tools"
     return "finalize_answer"
 
 
@@ -759,23 +1149,25 @@ def finalize_answer(state: AgentState) -> AgentState:
 def build_agent():
     """Build and compile the tool-enabled LangGraph workflow."""
     graph = StateGraph(AgentState)
+    graph.add_node("select_context_tables", select_context_tables)
     graph.add_node("load_database_context", load_database_context)
     graph.add_node("prepare_agent_messages", prepare_agent_messages)
     graph.add_node("call_agent_model", call_agent_model)
-    graph.add_node("task_database_tools", ToolNode(TASK_DATABASE_TOOLS))
+    graph.add_node("database_tools", ToolNode(AGENT_TOOLS))
     graph.add_node("finalize_answer", finalize_answer)
-    graph.add_edge(START, "load_database_context")
+    graph.add_edge(START, "select_context_tables")
+    graph.add_edge("select_context_tables", "load_database_context")
     graph.add_edge("load_database_context", "prepare_agent_messages")
     graph.add_edge("prepare_agent_messages", "call_agent_model")
     graph.add_conditional_edges(
         "call_agent_model",
         route_after_agent,
         {
-            "task_database_tools": "task_database_tools",
+            "database_tools": "database_tools",
             "finalize_answer": "finalize_answer",
         },
     )
-    graph.add_edge("task_database_tools", "call_agent_model")
+    graph.add_edge("database_tools", "call_agent_model")
     graph.add_edge("finalize_answer", END)
     return graph.compile()
 
