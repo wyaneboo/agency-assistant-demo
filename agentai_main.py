@@ -1059,9 +1059,9 @@ def normalize_history(history: Any) -> list[ChatHistoryItem]:
 
 def prepare_agent_messages(state: AgentState) -> AgentState:
     """Build the initial grounded conversation for the tool-calling agent."""
-    question = state["question"]
+    question = state.get("question", "")
     history = normalize_history(state.get("history", []))
-    database = state["database"]
+    database = state.get("database", {})
     selected_tables = _normalize_selected_tables(state.get("selected_tables"))
 
     database_json = json.dumps(database, indent=2, default=str)
@@ -1120,7 +1120,7 @@ def call_agent_model(state: AgentState) -> AgentState:
 
     model_name = os.getenv("GEMINI_MODEL") or DEFAULT_MODEL
     model = ChatGoogleGenerativeAI(model=model_name, temperature=0).bind_tools(AGENT_TOOLS)
-    response = model.invoke(state["messages"])
+    response = model.invoke(state.get("messages", []))
     return {"messages": [response]}
 
 
