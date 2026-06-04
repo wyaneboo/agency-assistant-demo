@@ -1065,7 +1065,7 @@ def prepare_agent_messages(state: AgentState) -> AgentState:
     selected_tables = _normalize_selected_tables(state.get("selected_tables"))
 
     database_json = json.dumps(database, indent=2, default=str)
-    messages = [
+    messages: list[BaseMessage] = [
         SystemMessage(
             content=(
                 "You are the Agency Hub operations assistant. Answer questions "
