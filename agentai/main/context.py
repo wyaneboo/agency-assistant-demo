@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from .schema import AgentState, BROAD_CONTEXT_KEYWORDS, TABLE_KEYWORDS, TABLES
-from .supabase import SupabaseRestClient, SupabaseRestConfig
-from .utils import clamp_limit, contains_any, normalize_selected_tables
+from ..schema import AgentState, BROAD_CONTEXT_KEYWORDS, TABLE_KEYWORDS, TABLES
+from ..tools.supabase import SupabaseRestClient, SupabaseRestConfig
+from ..utils import clamp_limit, contains_any, normalize_selected_tables
 
 
 def select_context_tables(state: AgentState) -> AgentState:

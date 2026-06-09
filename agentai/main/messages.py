@@ -6,8 +6,8 @@ from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, SystemMessage
 
-from .schema import AgentState, ChatHistoryItem
-from .utils import normalize_selected_tables
+from ..schema import AgentState, ChatHistoryItem
+from ..utils import normalize_selected_tables
 
 
 def content_to_text(content: Any) -> str:

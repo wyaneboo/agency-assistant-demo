@@ -5,7 +5,7 @@ import sys
 
 from langchain_core.tracers.langchain import wait_for_all_tracers
 
-from .graph import ask_agent
+from .main.graph import ask_agent
 from .schema import ChatHistoryItem
 
 
@@ -17,7 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--limit",
         type=int,
-        default=25,
+        default=50,
         help="Maximum rows to read per table, capped at 100.",
     )
     return parser.parse_args()

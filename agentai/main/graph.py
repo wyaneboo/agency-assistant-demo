@@ -9,11 +9,11 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.graph import END, START, StateGraph
 from langgraph.prebuilt import ToolNode
 
-from .config import DEFAULT_MODEL
+from ..config import DEFAULT_MODEL
 from .context import load_database_context, select_context_tables
 from .messages import content_to_text, prepare_agent_messages
-from .schema import AgentState, ChatHistoryItem
-from .tools import AGENT_TOOLS
+from ..schema import AgentState, ChatHistoryItem
+from ..tools.tools import AGENT_TOOLS
 
 
 def call_agent_model(state: AgentState) -> AgentState:

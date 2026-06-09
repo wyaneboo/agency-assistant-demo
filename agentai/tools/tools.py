@@ -6,9 +6,9 @@ from typing import Any, Literal
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 
-from .schema import NULLABLE_TASK_FIELDS, TASK_PRIORITIES, TASK_STATUSES
+from ..schema import NULLABLE_TASK_FIELDS, TASK_PRIORITIES, TASK_STATUSES
 from .supabase import SupabaseRestClient, SupabaseRestConfig
-from .utils import clamp_limit, date_key, optional_text, required_text, tool_json
+from ..utils import clamp_limit, date_key, optional_text, required_text, tool_json
 
 
 class TaskDatabaseChangeInput(BaseModel):

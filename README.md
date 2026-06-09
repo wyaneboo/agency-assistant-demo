@@ -25,7 +25,7 @@ GOOGLE_API_KEY=
 Optional model override:
 
 ```bash
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemma-4-31b-it
 ```
 
 Optional local LangGraph API URL used by the web assistant:

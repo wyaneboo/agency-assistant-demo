@@ -10,7 +10,7 @@ from urllib.request import Request, urlopen
 
 from dotenv import load_dotenv
 
-from .schema import TABLES, TABLE_SEARCH_FIELDS
+from ..schema import TABLES, TABLE_SEARCH_FIELDS
 
 
 @dataclass(frozen=True)
